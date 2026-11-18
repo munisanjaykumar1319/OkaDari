@@ -1,7 +1,22 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.v1.api import api_router
+from app.db.init_db import init_db
+from app.db.session import SessionLocal
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database tables and development seeds
+    db = SessionLocal()
+    try:
+        init_db(db)
+    finally:
+        db.close()
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -9,6 +24,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS Middleware
@@ -30,5 +46,6 @@ def root():
         "message": "Welcome to Smart Bike Ride-Sharing & Cost-Sharing API",
         "docs": "/docs",
         "health": f"{settings.API_V1_STR}/health",
-        "phase": "Phase 1 - Project Setup Complete"
+        "phase": "Phase 3 - Database Design Complete",
+        "tables": ["users", "rides", "bookings", "reviews", "reports"]
     }
