@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Bike, 
   Search, 
@@ -10,8 +10,11 @@ import {
   X, 
   User, 
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  LogIn,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 
@@ -19,6 +22,8 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
     { name: 'Home', path: '/', icon: Bike },
@@ -31,6 +36,22 @@ export default function Navbar() {
     if (path === '/' && location.pathname !== '/') return false;
     return location.pathname.startsWith(path);
   };
+
+  const handleSignOut = () => {
+    logout();
+    setProfileOpen(false);
+    navigate('/');
+  };
+
+  // Generate initials for avatar
+  const initials = user?.full_name
+    ? user.full_name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
 
   return (
     <nav className="sticky top-0 z-40 bg-[#080d19]/90 backdrop-blur-md border-b border-slate-800/80">
@@ -86,49 +107,66 @@ export default function Navbar() {
             {/* Notification Bell */}
             <button className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400"></span>
             </button>
 
-            {/* User Profile dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition text-left"
-              >
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  RK
-                </div>
-                <div className="hidden lg:block">
-                  <div className="text-xs font-semibold text-slate-200">Rohit Kumar</div>
-                  <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                    <ShieldCheck className="w-2.5 h-2.5" /> Verified Rider
-                  </div>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-              </button>
-
-              {profileOpen && (
-                <div 
-                  className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#0c1424] border border-slate-800 p-2 shadow-2xl z-50 text-xs"
-                  onClick={() => setProfileOpen(false)}
+            {/* User Profile or Sign In */}
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition text-left"
                 >
-                  <div className="px-3 py-2 border-b border-slate-800 text-slate-400">
-                    Signed in as <span className="font-semibold text-white block">rohit@example.com</span>
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                    {initials}
                   </div>
-                  <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg">
-                    <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> Dashboard
-                  </Link>
-                  <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg">
-                    <User className="w-3.5 h-3.5 text-indigo-400" /> Profile & Bike Details
-                  </Link>
-                  <div className="border-t border-slate-800 my-1"></div>
-                  <button className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/40 rounded-lg">
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
+                  <div className="hidden lg:block">
+                    <div className="text-xs font-semibold text-slate-200">{user.full_name}</div>
+                    <div className="text-[10px] text-cyan-400 flex items-center gap-1 capitalize">
+                      <ShieldCheck className="w-2.5 h-2.5" /> {user.role}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                </button>
+
+                {profileOpen && (
+                  <div 
+                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-[#0c1424] border border-slate-800 p-2 shadow-2xl z-50 text-xs"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <div className="px-3 py-2 border-b border-slate-800 text-slate-400">
+                      Signed in as <span className="font-semibold text-white block truncate">{user.email}</span>
+                      {user.bike_model && (
+                        <span className="text-[10px] text-slate-400 block mt-0.5">🏍️ {user.bike_model}</span>
+                      )}
+                    </div>
+                    <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> Dashboard
+                    </Link>
+                    <div className="border-t border-slate-800 my-1"></div>
+                    <button 
+                      onClick={handleSignOut}
+                      className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/40 rounded-lg flex items-center gap-2"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <Button size="sm" variant="outline" icon={LogIn}>
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm" variant="secondary">
+                    Register
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -165,12 +203,25 @@ export default function Navbar() {
               </Link>
             );
           })}
-          <div className="pt-2">
-            <Link to="/offer" onClick={() => setMobileMenuOpen(false)}>
-              <Button size="md" variant="primary" className="w-full" icon={PlusCircle}>
-                Offer a Ride
+          <div className="pt-2 flex flex-col gap-2">
+            {isAuthenticated ? (
+              <Button size="md" variant="outline" className="w-full" onClick={handleSignOut} icon={LogOut}>
+                Sign Out ({user.full_name})
               </Button>
-            </Link>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button size="md" variant="outline" className="w-full" icon={LogIn}>
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button size="md" variant="primary" className="w-full">
+                    Register
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

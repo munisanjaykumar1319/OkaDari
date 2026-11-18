@@ -13,8 +13,10 @@ import {
   Star, 
   Search,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LogIn
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/dashboard/StatCard';
 import RecentRides from '../components/dashboard/RecentRides';
 import Card, { CardHeader } from '../components/common/Card';
@@ -24,13 +26,24 @@ import Modal from '../components/common/Modal';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { user: authUser, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedRide, setSelectedRide] = useState(null);
 
-  // Mock initial dashboard state
-  const user = {
-    name: 'Rohit Kumar',
-    email: 'rohit.kumar@example.com',
+  // Active user data (from AuthContext or fallback demo)
+  const user = authUser ? {
+    name: authUser.full_name,
+    email: authUser.email,
+    role: authUser.role === 'both' ? 'Rider & Passenger' : authUser.role === 'rider' ? 'Verified Rider' : 'Passenger',
+    phone: authUser.phone || '+91 98765 43210',
+    verified: authUser.is_verified,
+    rating: authUser.rating_avg || 5.0,
+    totalReviews: authUser.rating_count || 0,
+    bikeModel: authUser.bike_model || (authUser.role !== 'passenger' ? 'Vehicle Registered' : 'Commuter'),
+    bikePlate: authUser.bike_plate || 'Not registered'
+  } : {
+    name: 'Rohit Kumar (Demo Mode)',
+    email: 'rohit@example.com',
     role: 'Rider & Passenger',
     phone: '+91 98765 43210',
     verified: true,
@@ -39,6 +52,13 @@ export default function DashboardPage() {
     bikeModel: 'Royal Enfield Hunter 350',
     bikePlate: 'TS 09 EZ 4589'
   };
+
+  const initials = user.name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   const rides = [
     {
@@ -49,7 +69,7 @@ export default function DashboardPage() {
       to: 'Financial District, Nanakramguda',
       date: 'Today, Nov 18',
       time: '09:15 AM',
-      bikeModel: 'RE Hunter 350',
+      bikeModel: user.bikeModel,
       partnerName: 'Priya Verma (Passenger)',
       distanceKm: 14.2,
       cost: 55
@@ -75,7 +95,7 @@ export default function DashboardPage() {
       to: 'Raidurg Metro',
       date: 'Tomorrow, Nov 19',
       time: '08:45 AM',
-      bikeModel: 'RE Hunter 350',
+      bikeModel: user.bikeModel,
       partnerName: 'Waiting for Request',
       distanceKm: 6.0,
       cost: 30
@@ -84,19 +104,32 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* If not authenticated banner */}
+      {!isAuthenticated && (
+        <div className="p-4 rounded-xl bg-cyan-950/50 border border-cyan-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cyan-200">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span>Viewing in Demo Preview mode. Sign in to sync your active rides and personal vehicle documents.</span>
+          </div>
+          <Button size="sm" variant="primary" icon={LogIn} onClick={() => navigate('/login')}>
+            Sign In Now
+          </Button>
+        </div>
+      )}
+
       {/* Top Banner / Welcome */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-[#0d162b] to-slate-900 border border-slate-800 shadow-xl">
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-lg shadow-cyan-500/20">
-            RK
+            {initials}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-white tracking-tight">{user.name}</h1>
-              <Badge variant="success" size="sm" dot>Verified Rider</Badge>
+              <Badge variant="success" size="sm" dot>{user.role}</Badge>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              {user.bikeModel} • Plate: <span className="font-mono text-slate-300">{user.bikePlate}</span>
+              {user.bikeModel} • Plate: <span className="font-mono text-slate-300">{user.bikePlate}</span> • {user.email}
             </p>
           </div>
         </div>
@@ -149,8 +182,8 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Trust & Safety Rating"
-          value="4.9 ★"
-          subtext="Based on 28 verified reviews"
+          value={`${user.rating} ★`}
+          subtext={`Based on ${user.totalReviews} verified reviews`}
           icon={Star}
           iconColor="text-amber-400"
           iconBg="bg-amber-500/10 border-amber-500/20"
