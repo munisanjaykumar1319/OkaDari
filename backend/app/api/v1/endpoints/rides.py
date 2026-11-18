@@ -1,7 +1,8 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date as date_type
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.db.session import get_db
 from app.models.user import User
 from app.models.ride import Ride
@@ -90,6 +91,62 @@ def get_my_offered_rides(
     return rides
 
 
+@router.get("/search", response_model=List[RideResponse], summary="Search and filter available bike rides")
+def search_rides(
+    origin: Optional[str] = Query(None, description="Starting location keyword"),
+    destination: Optional[str] = Query(None, description="Destination location keyword"),
+    date: Optional[str] = Query(None, description="Travel date in YYYY-MM-DD format"),
+    max_cost: Optional[float] = Query(None, description="Maximum agreed contribution"),
+    helmet_required: Optional[bool] = Query(None, description="Filter rides where helmet is provided"),
+    sort_by: Optional[str] = Query("time_asc", description="Sorting: time_asc, time_desc, cost_asc, cost_desc"),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Ride).filter(
+        Ride.status == "OPEN",
+        Ride.departure_time >= datetime.utcnow(),
+        Ride.available_seats >= 1
+    )
+
+    if origin and origin.strip():
+        query = query.filter(Ride.origin.ilike(f"%{origin.strip()}%"))
+
+    if destination and destination.strip():
+        query = query.filter(Ride.destination.ilike(f"%{destination.strip()}%"))
+
+    if date and date.strip():
+        try:
+            target_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+            start_of_day = datetime.combine(target_date, datetime.min.time())
+            end_of_day = datetime.combine(target_date, datetime.max.time())
+            query = query.filter(
+                Ride.departure_time >= start_of_day,
+                Ride.departure_time <= end_of_day
+            )
+        except ValueError:
+            pass
+
+    if max_cost is not None and max_cost > 0:
+        query = query.filter(Ride.cost_per_seat <= max_cost)
+
+    if helmet_required is True:
+        query = query.filter(Ride.helmet_provided == True)
+
+    # Sorting
+    if sort_by == "cost_asc":
+        query = query.order_by(Ride.cost_per_seat.asc())
+    elif sort_by == "cost_desc":
+        query = query.order_by(Ride.cost_per_seat.desc())
+    elif sort_by == "time_desc":
+        query = query.order_by(Ride.departure_time.desc())
+    else:  # time_asc default
+        query = query.order_by(Ride.departure_time.asc())
+
+    rides = query.offset(offset).limit(limit).all()
+    return rides
+
+
 @router.get("/{ride_id}", response_model=RideResponse, summary="Get details of a specific ride")
 def get_ride_by_id(
     ride_id: int,
@@ -173,7 +230,7 @@ def cancel_ride(
 
     ride.status = "CANCELLED"
 
-    # Also update any pending bookings on this ride to REJECTED / CANCELLED
+    # Also update any pending bookings on this ride to CANCELLED
     bookings = db.query(Booking).filter(Booking.ride_id == ride.id).all()
     for b in bookings:
         if b.status in ["PENDING", "ACCEPTED"]:
