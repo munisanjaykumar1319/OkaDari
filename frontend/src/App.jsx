@@ -16,7 +16,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white antialiased">
+          <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white antialiased">
             <Navbar />
             <main className="flex-1">
               <Routes>

@@ -54,8 +54,7 @@ export default function DashboardPage() {
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   // Live location tracking state
-  const [liveProviderRide, setLiveProviderRide] = useState(null); // { rideId }
-  const [liveViewerRide, setLiveViewerRide] = useState(null);     // { rideId }
+  const [liveViewerRide, setLiveViewerRide] = useState(null);
 
   // Active user profile
   const user = authUser ? {
@@ -231,417 +230,428 @@ export default function DashboardPage() {
         : myBookings;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* If not authenticated banner */}
-      {!isAuthenticated && (
-        <div className="p-4 rounded-xl bg-cyan-950/50 border border-cyan-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cyan-200">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span>Viewing in Demo Preview mode. Sign in to sync your active rides and personal vehicle documents.</span>
-          </div>
-          <Button size="sm" variant="primary" icon={LogIn} onClick={() => navigate('/login')}>
-            Sign In Now
-          </Button>
-        </div>
-      )}
-
-      {/* Top Banner / Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-[#0d162b] to-slate-900 border border-slate-800 shadow-xl">
-        <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-lg shadow-cyan-500/20">
-            {initials}
-          </div>
-          <div>
+    <div className="min-h-screen bg-[#F8FAFC] text-gray-800 pb-16" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* If not authenticated banner */}
+        {!isAuthenticated && (
+          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-900">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-white tracking-tight">{user.name}</h1>
-              <Badge variant="success" size="sm" dot>{user.role}</Badge>
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+              <span>Viewing in Demo Preview mode. Sign in to sync your active rides and personal vehicle documents.</span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {user.bikeModel} • Plate: <span className="font-mono text-slate-300">{user.bikePlate}</span> • {user.email}
-            </p>
+            <Button size="sm" variant="primary" icon={LogIn} onClick={() => navigate('/login')}>
+              Sign In Now
+            </Button>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            icon={Search} 
-            onClick={() => navigate('/find')}
-          >
-            Find a Ride
-          </Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            icon={PlusCircle} 
-            onClick={() => navigate('/offer')}
-          >
-            Offer New Ride
-          </Button>
-        </div>
-      </div>
-
-      {/* Safety, Verification & SOS Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-[#091124] border border-cyan-500/20 shadow-lg text-xs">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="font-bold text-white">Identity & Verification</div>
-            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-              <span>Phone: {authUser?.is_verified ? 'Verified ✅' : 'Unverified ⚠️'}</span>
-              <span>•</span>
-              <span>DL: {authUser?.is_dl_verified ? 'Verified 🛡️' : 'Optional'}</span>
+        {/* Top Banner / Welcome Profile */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-white border border-gray-200 shadow-sm">
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#2563EB] flex items-center justify-center text-xl font-black text-white shadow-md shadow-blue-500/20">
+              {initials}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight">{user.name}</h1>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  {user.role}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {user.bikeModel} • Plate: <span className="font-mono text-gray-700 font-semibold">{user.bikePlate}</span> • {user.email}
+              </p>
             </div>
           </div>
+
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              icon={Search} 
+              onClick={() => navigate('/find')}
+            >
+              Find a Ride
+            </Button>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              icon={PlusCircle} 
+              onClick={() => navigate('/offer')}
+            >
+              Offer New Ride
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
-            <Star className="w-5 h-5 fill-amber-400" />
-          </div>
-          <div>
-            <div className="font-bold text-white">Trust & Rating Score</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
-              {authUser?.rating_avg || 5.0} ⭐ ({authUser?.rating_count || 0} reviews)
+        {/* Safety, Verification & SOS Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm text-xs">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">Identity & Verification</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>Phone: {authUser?.is_verified ? 'Verified ✅' : 'Unverified ⚠️'}</span>
+                <span>•</span>
+                <span>DL: {authUser?.is_dl_verified ? 'Verified 🛡️' : 'Optional'}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
-            <HeartPulse className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="font-bold text-white">Emergency Contact</div>
-            <div className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[150px]">
-              {authUser?.emergency_contact_name ? `${authUser.emergency_contact_name} (${authUser.emergency_contact_phone})` : 'Not configured'}
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+              <Star className="w-5 h-5 fill-amber-400" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">Trust & Rating Score</div>
+              <div className="text-[11px] text-gray-500 mt-0.5">
+                {authUser?.rating_avg || 5.0} ⭐ ({authUser?.rating_count || 0} reviews)
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-start md:justify-end">
-          <button
-            onClick={() => setSafetyModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold transition shadow-md shadow-rose-600/30 flex items-center gap-2 cursor-pointer"
-          >
-            <HeartPulse className="w-4 h-4 animate-pulse" />
-            <span>Safety & SOS Hub</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Incoming Booking Requests Alert (For Riders) */}
-      {pendingRequests.length > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border border-amber-600/50 shadow-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-amber-400">
-              <Users className="w-4 h-4" />
-              <span>You have {pendingRequests.length} incoming booking request(s)!</span>
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
+              <HeartPulse className="w-5 h-5" />
             </div>
-            <Badge variant="warning" size="sm" dot>Pending Approval</Badge>
+            <div>
+              <div className="font-bold text-gray-900">Emergency Contact</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 truncate max-w-[150px]">
+                {authUser?.emergency_contact_name ? `${authUser.emergency_contact_name} (${authUser.emergency_contact_phone})` : 'Not configured'}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-            {pendingRequests.map(req => (
-              <div key={req.id} className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-4 text-xs">
-                <div>
-                  <div className="font-semibold text-white">Passenger Request #{req.id}</div>
-                  <div className="text-[11px] text-slate-400">
-                    Route: {req.rideOrigin} &rarr; {req.rideDest}
+          <div className="flex items-center justify-start md:justify-end">
+            <button
+              onClick={() => setSafetyModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition shadow-sm flex items-center gap-2 cursor-pointer"
+            >
+              <HeartPulse className="w-4 h-4" />
+              <span>Safety & SOS Hub</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Incoming Booking Requests Alert (For Riders) */}
+        {pendingRequests.length > 0 && (
+          <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                <Users className="w-4 h-4 text-amber-700" />
+                <span>You have {pendingRequests.length} incoming booking request(s)!</span>
+              </div>
+              <Badge variant="warning" size="sm" dot>Pending Approval</Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              {pendingRequests.map(req => (
+                <div key={req.id} className="p-3.5 rounded-xl bg-white border border-amber-200 flex items-center justify-between gap-4 text-xs shadow-sm">
+                  <div>
+                    <div className="font-semibold text-gray-900">Passenger Request #{req.id}</div>
+                    <div className="text-[11px] text-gray-500">
+                      Route: {req.rideOrigin} &rarr; {req.rideDest}
+                    </div>
+                    <div className="text-[11px] text-blue-600 font-bold mt-0.5">
+                      Contribution: ₹{req.agreed_contribution}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-cyan-400 font-semibold mt-0.5">
-                    Contribution: ₹{req.agreed_contribution}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button 
+                      size="sm" 
+                      variant="success" 
+                      icon={UserCheck}
+                      disabled={actionLoading}
+                      onClick={() => handleAcceptRequest(req.id)}
+                    >
+                      Accept
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="danger" 
+                      icon={UserX}
+                      disabled={actionLoading}
+                      onClick={() => handleRejectRequest(req.id)}
+                    >
+                      Reject
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button 
-                    size="sm" 
-                    variant="success" 
-                    icon={UserCheck}
-                    disabled={actionLoading}
-                    onClick={() => handleAcceptRequest(req.id)}
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stats Overview Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Rides"
+            value={allRides.length.toString()}
+            subtext={`${offeredRides.length} Offered • ${myBookings.length} Booked`}
+            icon={Bike}
+            trend="+15% activity"
+          />
+          <StatCard
+            title="Fuel Cost Saved"
+            value="₹3,450"
+            subtext="Fair transparent expense sharing"
+            icon={DollarSign}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 border-emerald-100"
+            trend="Saved 54%"
+          />
+          <StatCard
+            title="Total Shared Distance"
+            value="580 km"
+            subtext="Reduced ~62 kg CO₂ emissions"
+            icon={TrendingUp}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 border-blue-100"
+          />
+          <StatCard
+            title="Trust & Safety Rating"
+            value={`${user.rating} ★`}
+            subtext={`Based on ${user.totalReviews} verified reviews`}
+            icon={Star}
+            iconColor="text-amber-500"
+            iconBg="bg-amber-50 border-amber-100"
+          />
+        </div>
+
+        {/* Tabs navigation */}
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'overview'
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              All Activity ({allRides.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('offered')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'offered'
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              My Offered Rides ({offeredRides.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('booked')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'booked'
+                  ? 'bg-[#2563EB] text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              My Bookings ({myBookings.length})
+            </button>
+          </div>
+
+          {isAuthenticated && (
+            <button
+              onClick={loadDashboardData}
+              disabled={loadingData}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+              title="Refresh rides data"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin text-blue-600' : ''}`} />
+            </button>
+          )}
+        </div>
+
+        {/* Recent Rides Table / List */}
+        <RecentRides
+          title={
+            activeTab === 'overview' 
+              ? "All Active & Scheduled Rides" 
+              : activeTab === 'offered' 
+                ? "Rides You Are Offering" 
+                : "Rides You Have Booked"
+          }
+          rides={displayedRides}
+          onSelectRide={(ride) => setSelectedRide(ride)}
+        />
+
+        {/* Ride Details & Management Modal */}
+        <Modal
+          isOpen={!!selectedRide}
+          onClose={() => setSelectedRide(null)}
+          title={selectedRide?.role === 'booked' ? "Confirmed Booking Details" : "Ride Offer Summary & Management"}
+        >
+          {selectedRide && (
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Route:</span>
+                  <span className="font-semibold text-gray-900">{selectedRide.from} &rarr; {selectedRide.to}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Schedule:</span>
+                  <span className="text-blue-600 font-semibold">{selectedRide.date} at {selectedRide.time}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Bike:</span>
+                  <span className="text-gray-700 font-medium">{selectedRide.bikeModel}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Status:</span>
+                  <Badge variant={selectedRide.status === 'ACCEPTED' || selectedRide.status === 'OPEN' || selectedRide.status === 'Confirmed' ? 'success' : 'warning'}>
+                    {selectedRide.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
+                <div className="flex justify-between text-gray-700">
+                  <span>Calculated Fuel Expense:</span>
+                  <span>₹{selectedRide.cost * 2}</span>
+                </div>
+                <div className="flex justify-between text-blue-700 font-bold text-sm pt-1 border-t border-blue-200">
+                  <span>Passenger Fair Contribution:</span>
+                  <span>₹{selectedRide.cost} (50%)</span>
+                </div>
+              </div>
+
+              {/* Safety, Review & Report Action for Passenger Bookings */}
+              {selectedRide.role === 'booked' && (selectedRide.status === 'ACCEPTED' || selectedRide.status === 'COMPLETED') && (
+                <div className="flex gap-2 pt-2 border-t border-gray-200">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Star}
+                    onClick={() => {
+                      setReviewTarget({
+                        rideId: selectedRide.rideId || selectedRide.id,
+                        revieweeId: selectedRide.riderId,
+                        revieweeName: selectedRide.rawRiderName || selectedRide.partnerName
+                      });
+                      setSelectedRide(null);
+                    }}
                   >
-                    Accept
+                    Rate Experience
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={ShieldAlert}
+                    onClick={() => {
+                      setReportTarget({
+                        userId: selectedRide.riderId,
+                        userName: selectedRide.rawRiderName || selectedRide.partnerName,
+                        rideId: selectedRide.rideId || selectedRide.id
+                      });
+                      setSelectedRide(null);
+                    }}
+                  >
+                    Report / Block
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-2">
+                {/* If booked and can cancel */}
+                {selectedRide.role === 'booked' && selectedRide.canCancel && (
                   <Button 
                     size="sm" 
                     variant="danger" 
-                    icon={UserX}
-                    disabled={actionLoading}
-                    onClick={() => handleRejectRequest(req.id)}
+                    icon={XCircle}
+                    loading={actionLoading}
+                    onClick={() => handleCancelBooking(selectedRide.bookingId || selectedRide.id)}
                   >
-                    Reject
+                    Cancel Booking
                   </Button>
-                </div>
+                )}
+
+                {/* If offered and can cancel */}
+                {selectedRide.role === 'offered' && selectedRide.canCancel && (
+                  <Button 
+                    size="sm" 
+                    variant="danger" 
+                    icon={XCircle}
+                    loading={actionLoading}
+                    onClick={() => handleCancelRide(selectedRide.id)}
+                  >
+                    Cancel Ride Offer
+                  </Button>
+                )}
+
+                {/* Live Location Sharing — for offered rides */}
+                {selectedRide.role === 'offered' && isAuthenticated && (
+                  <div className="w-full mt-4">
+                    <LiveLocationProvider
+                      rideId={selectedRide.id}
+                      token={localStorage.getItem('access_token')}
+                    />
+                  </div>
+                )}
+
+                {/* Live Location Viewer — for accepted bookings */}
+                {selectedRide.role === 'booked' && selectedRide.status === 'ACCEPTED' && isAuthenticated && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Eye}
+                    onClick={() => setLiveViewerRide({ rideId: selectedRide.rideId })}
+                  >
+                    Track Live Location
+                  </Button>
+                )}
+
+                <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)}>
+                  Close
+                </Button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
+        </Modal>
 
-      {/* Stats Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Rides"
-          value={allRides.length.toString()}
-          subtext={`${offeredRides.length} Offered • ${myBookings.length} Booked`}
-          icon={Bike}
-          trend="+15% activity"
+        {/* Safety Hub & Emergency SOS Modal */}
+        <SafetyHubModal 
+          isOpen={safetyModalOpen} 
+          onClose={() => setSafetyModalOpen(false)} 
         />
-        <StatCard
-          title="Fuel Cost Saved"
-          value="₹3,450"
-          subtext="Fair transparent expense sharing"
-          icon={DollarSign}
-          iconColor="text-emerald-400"
-          iconBg="bg-emerald-500/10 border-emerald-500/20"
-          trend="Saved 54%"
-        />
-        <StatCard
-          title="Total Shared Distance"
-          value="580 km"
-          subtext="Reduced ~62 kg CO₂ emissions"
-          icon={TrendingUp}
-          iconColor="text-purple-400"
-          iconBg="bg-purple-500/10 border-purple-500/20"
-        />
-        <StatCard
-          title="Trust & Safety Rating"
-          value={`${user.rating} ★`}
-          subtext={`Based on ${user.totalReviews} verified reviews`}
-          icon={Star}
-          iconColor="text-amber-400"
-          iconBg="bg-amber-500/10 border-amber-500/20"
-        />
-      </div>
 
-      {/* Tabs navigation */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'overview'
-                ? 'bg-slate-800 text-cyan-400 border border-slate-700'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            All Activity ({allRides.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('offered')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'offered'
-                ? 'bg-slate-800 text-cyan-400 border border-slate-700'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            My Offered Rides ({offeredRides.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('booked')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'booked'
-                ? 'bg-slate-800 text-cyan-400 border border-slate-700'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            My Bookings ({myBookings.length})
-          </button>
-        </div>
+        {/* Rating & Review Modal */}
+        {reviewTarget && (
+          <ReviewModal
+            isOpen={!!reviewTarget}
+            onClose={() => setReviewTarget(null)}
+            rideId={reviewTarget.rideId}
+            revieweeId={reviewTarget.revieweeId}
+            revieweeName={reviewTarget.revieweeName}
+            onSuccess={() => loadDashboardData()}
+          />
+        )}
 
-        {isAuthenticated && (
-          <button
-            onClick={loadDashboardData}
-            disabled={loadingData}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Refresh dashboard data"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-cyan-400' : ''}`} />
-          </button>
+        {/* Report & Block Modal */}
+        {reportTarget && (
+          <ReportModal
+            isOpen={!!reportTarget}
+            onClose={() => setReportTarget(null)}
+            reportedUserId={reportTarget.userId}
+            reportedUserName={reportTarget.userName}
+            rideId={reportTarget.rideId}
+            onSuccess={() => loadDashboardData()}
+          />
+        )}
+
+        {/* Live Location Viewer Modal */}
+        {liveViewerRide && (
+          <LiveLocationViewer
+            rideId={liveViewerRide.rideId}
+            token={localStorage.getItem('access_token')}
+            onClose={() => setLiveViewerRide(null)}
+          />
         )}
       </div>
-
-      {/* Rides List Section */}
-      <RecentRides 
-        rides={displayedRides}
-        onSelectRide={(ride) => setSelectedRide(ride)}
-      />
-
-      {/* Ride Details & Management Modal */}
-      <Modal
-        isOpen={!!selectedRide}
-        onClose={() => setSelectedRide(null)}
-        title={selectedRide?.role === 'booked' ? "Confirmed Booking Details" : "Ride Offer Summary & Management"}
-      >
-        {selectedRide && (
-          <div className="space-y-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Route:</span>
-                <span className="font-semibold text-white">{selectedRide.from} &rarr; {selectedRide.to}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Schedule:</span>
-                <span className="text-cyan-400">{selectedRide.date} at {selectedRide.time}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Bike:</span>
-                <span className="text-slate-200">{selectedRide.bikeModel}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Status:</span>
-                <Badge variant={selectedRide.status === 'ACCEPTED' || selectedRide.status === 'OPEN' || selectedRide.status === 'Confirmed' ? 'success' : 'warning'}>
-                  {selectedRide.status}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-800/50 space-y-1">
-              <div className="flex justify-between text-slate-300">
-                <span>Calculated Fuel Expense:</span>
-                <span>₹{selectedRide.cost * 2}</span>
-              </div>
-              <div className="flex justify-between text-cyan-400 font-bold text-sm pt-1 border-t border-cyan-800/40">
-                <span>Passenger Fair Contribution:</span>
-                <span>₹{selectedRide.cost} (50%)</span>
-              </div>
-            </div>
-
-            {/* Safety, Review & Report Action for Passenger Bookings */}
-            {selectedRide.role === 'booked' && (selectedRide.status === 'ACCEPTED' || selectedRide.status === 'COMPLETED') && (
-              <div className="flex gap-2 pt-2 border-t border-slate-800">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Star}
-                  onClick={() => {
-                    setReviewTarget({
-                      rideId: selectedRide.rideId || selectedRide.id,
-                      revieweeId: selectedRide.riderId,
-                      revieweeName: selectedRide.rawRiderName || selectedRide.partnerName
-                    });
-                    setSelectedRide(null);
-                  }}
-                >
-                  Rate Experience
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  icon={ShieldAlert}
-                  onClick={() => {
-                    setReportTarget({
-                      userId: selectedRide.riderId,
-                      userName: selectedRide.rawRiderName || selectedRide.partnerName,
-                      rideId: selectedRide.rideId || selectedRide.id
-                    });
-                    setSelectedRide(null);
-                  }}
-                >
-                  Report / Block
-                </Button>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center pt-2">
-              {/* If booked and can cancel */}
-              {selectedRide.role === 'booked' && selectedRide.canCancel && (
-                <Button 
-                  size="sm" 
-                  variant="danger" 
-                  icon={XCircle}
-                  loading={actionLoading}
-                  onClick={() => handleCancelBooking(selectedRide.bookingId || selectedRide.id)}
-                >
-                  Cancel Booking
-                </Button>
-              )}
-
-              {/* If offered and can cancel */}
-              {selectedRide.role === 'offered' && selectedRide.canCancel && (
-                <Button 
-                  size="sm" 
-                  variant="danger" 
-                  icon={XCircle}
-                  loading={actionLoading}
-                  onClick={() => handleCancelRide(selectedRide.id)}
-                >
-                  Cancel Ride Offer
-                </Button>
-              )}
-
-              {/* Live Location Sharing — for offered rides */}
-              {selectedRide.role === 'offered' && isAuthenticated && (
-                <div className="w-full mt-4">
-                  <LiveLocationProvider
-                    rideId={selectedRide.id}
-                    token={localStorage.getItem('access_token')}
-                  />
-                </div>
-              )}
-
-              {/* Live Location Viewer — for accepted bookings */}
-              {selectedRide.role === 'booked' && selectedRide.status === 'ACCEPTED' && isAuthenticated && (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Eye}
-                  onClick={() => setLiveViewerRide({ rideId: selectedRide.rideId })}
-                >
-                  Track Live Location
-                </Button>
-              )}
-
-              <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Safety Hub & Emergency SOS Modal */}
-      <SafetyHubModal 
-        isOpen={safetyModalOpen} 
-        onClose={() => setSafetyModalOpen(false)} 
-      />
-
-      {/* Rating & Review Modal */}
-      {reviewTarget && (
-        <ReviewModal
-          isOpen={!!reviewTarget}
-          onClose={() => setReviewTarget(null)}
-          rideId={reviewTarget.rideId}
-          revieweeId={reviewTarget.revieweeId}
-          revieweeName={reviewTarget.revieweeName}
-          onSuccess={() => loadDashboardData()}
-        />
-      )}
-
-      {/* Report & Block Modal */}
-      {reportTarget && (
-        <ReportModal
-          isOpen={!!reportTarget}
-          onClose={() => setReportTarget(null)}
-          reportedUserId={reportTarget.userId}
-          reportedUserName={reportTarget.userName}
-          rideId={reportTarget.rideId}
-          onSuccess={() => loadDashboardData()}
-        />
-      )}
-
-      {/* Live Location Viewer Modal */}
-      {liveViewerRide && (
-        <LiveLocationViewer
-          rideId={liveViewerRide.rideId}
-          token={localStorage.getItem('access_token')}
-          onClose={() => setLiveViewerRide(null)}
-        />
-      )}
     </div>
   );
 }

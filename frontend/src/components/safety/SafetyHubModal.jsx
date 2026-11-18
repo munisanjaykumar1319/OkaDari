@@ -48,14 +48,13 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
   // Emergency SOS State
   const [sosLoading, setSosLoading] = useState(false);
   const [sosData, setSosData] = useState(null);
-  const [sosError, setSosError] = useState('');
 
   useEffect(() => {
     if (user) {
-      if (user.phone && !phoneNumber) setPhoneNumber(user.phone);
-      if (user.driving_license_number && !dlNumber) setDlNumber(user.driving_license_number);
-      if (user.emergency_contact_name && !contactName) setContactName(user.emergency_contact_name);
-      if (user.emergency_contact_phone && !contactPhone) setContactPhone(user.emergency_contact_phone);
+      setPhoneNumber(user.phone || '');
+      setDlNumber(user.driving_license_number || '');
+      setContactName(user.emergency_contact_name || '');
+      setContactPhone(user.emergency_contact_phone || '');
     }
   }, [user]);
 
@@ -90,12 +89,14 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
     try {
       await axios.post('/api/v1/safety/phone/verify-otp', {
         phone: phoneNumber,
-        otp: otpCode,
+        otp_code: otpCode.trim()
       });
-      setPhoneSuccess('Phone verified successfully! Badge active.');
+      setPhoneSuccess('🎉 Phone number successfully verified!');
+      setOtpSent(false);
+      setOtpCode('');
       if (refreshUser) refreshUser();
     } catch (err) {
-      setPhoneError(err.response?.data?.detail || 'Invalid OTP code. Please check and try again.');
+      setPhoneError(err.response?.data?.detail || 'Invalid OTP code. Please verify and retry.');
     } finally {
       setPhoneLoading(false);
     }
@@ -105,19 +106,19 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
     e.preventDefault();
     setDlError('');
     setDlSuccess('');
-    if (!dlNumber || dlNumber.trim().length < 6) {
-      setDlError('Please enter a valid Driving License number (min 6 characters).');
+    if (!dlNumber || dlNumber.trim().length < 8) {
+      setDlError('Please enter a valid Government Driving License number.');
       return;
     }
     setDlLoading(true);
     try {
-      const res = await axios.post('/api/v1/safety/license/verify', {
-        driving_license_number: dlNumber,
+      const res = await axios.post('/api/v1/safety/driving-license/verify', {
+        license_number: dlNumber.trim()
       });
-      setDlSuccess(res.data.message);
+      setDlSuccess(res.data.message || 'Driving License verified successfully!');
       if (refreshUser) refreshUser();
     } catch (err) {
-      setDlError(err.response?.data?.detail || 'License verification failed.');
+      setDlError(err.response?.data?.detail || 'DL verification failed. Please check license number format.');
     } finally {
       setDlLoading(false);
     }
@@ -127,78 +128,80 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
     e.preventDefault();
     setContactError('');
     setContactSuccess('');
-    if (!contactName || !contactPhone) {
-      setContactError('Please enter both contact name and phone number.');
+    if (!contactName.trim() || !contactPhone.trim()) {
+      setContactError('Please provide both emergency contact name and phone number.');
       return;
     }
     setContactLoading(true);
     try {
-      const res = await axios.post('/api/v1/safety/emergency-contact', {
-        name: contactName,
-        phone: contactPhone,
+      await axios.post('/api/v1/safety/emergency-contact', {
+        name: contactName.trim(),
+        phone: contactPhone.trim(),
+        relationship: 'Family/Close Contact'
       });
-      setContactSuccess(res.data.message);
+      setContactSuccess('Emergency contact updated successfully!');
       if (refreshUser) refreshUser();
     } catch (err) {
-      setContactError(err.response?.data?.detail || 'Failed to save emergency contact.');
+      setContactError(err.response?.data?.detail || 'Failed to update emergency contact.');
     } finally {
       setContactLoading(false);
     }
   };
 
   const handleTriggerSos = async () => {
-    setSosError('');
+    if (!confirm('🚨 Are you sure you want to trigger the Emergency SOS protocol? This will dispatch alerts to your emergency contact.')) return;
     setSosLoading(true);
     try {
-      const res = await axios.post('/api/v1/safety/sos', {
-        current_location_name: 'Live GPS Coordinates',
-        notes: 'Emergency assistance requested via RideShare Safety Hub',
+      const res = await axios.post('/api/v1/safety/sos/trigger', {
+        current_lat: 17.4483,
+        current_lon: 78.3915,
+        location_name: 'Near Hitech City Cyber Towers, Hyderabad'
       });
       setSosData(res.data);
     } catch (err) {
-      setSosError(err.response?.data?.detail || 'Could not dispatch SOS. Call 112 directly!');
+      alert(err.response?.data?.detail || 'Failed to dispatch SOS alert. Please dial 112 immediately.');
     } finally {
       setSosLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div 
-        className="bg-[#0b1329] border border-cyan-500/30 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-cyan-950/50 flex flex-col max-h-[90vh]"
+        className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] text-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-[#0e1730]">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-md shadow-blue-500/20">
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 Safety & Verification Center
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 Verified identities, emergency response & community trust
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-200 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div className="grid grid-cols-3 border-b border-slate-800 bg-[#090f20] text-sm">
+        <div className="grid grid-cols-3 border-b border-gray-200 bg-gray-50 text-sm">
           <button
             onClick={() => setActiveTab('verify')}
             className={`py-3 px-4 font-semibold text-center transition flex items-center justify-center gap-2 border-b-2 ${
               activeTab === 'verify'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-blue-600 text-blue-600 bg-white font-bold'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
@@ -208,19 +211,19 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
             onClick={() => setActiveTab('sos')}
             className={`py-3 px-4 font-semibold text-center transition flex items-center justify-center gap-2 border-b-2 ${
               activeTab === 'sos'
-                ? 'border-rose-500 text-rose-400 bg-rose-950/20'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-red-600 text-red-600 bg-white font-bold'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <HeartPulse className="w-4 h-4 text-rose-400" />
+            <HeartPulse className="w-4 h-4 text-red-600" />
             Emergency SOS
           </button>
           <button
             onClick={() => setActiveTab('standards')}
             className={`py-3 px-4 font-semibold text-center transition flex items-center justify-center gap-2 border-b-2 ${
               activeTab === 'standards'
-                ? 'border-indigo-400 text-indigo-400 bg-indigo-950/20'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-blue-600 text-blue-600 bg-white font-bold'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
             <Lock className="w-4 h-4" />
@@ -229,39 +232,39 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-200 text-sm">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-gray-700 text-sm">
           {/* TAB 1: ID VERIFICATION */}
           {activeTab === 'verify' && (
             <div className="space-y-6">
               {/* Phone Verification Box */}
-              <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-cyan-400" />
+                    <Phone className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h4 className="font-semibold text-white">Mobile Phone Verification</h4>
-                      <p className="text-xs text-slate-400">Ensures passengers and riders can communicate directly</p>
+                      <h4 className="font-semibold text-gray-900">Mobile Phone Verification</h4>
+                      <p className="text-xs text-gray-500">Ensures passengers and riders can communicate directly</p>
                     </div>
                   </div>
                   {user?.is_verified ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       <CheckCircle className="w-3.5 h-3.5" /> Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                       <AlertCircle className="w-3.5 h-3.5" /> Unverified
                     </span>
                   )}
                 </div>
 
                 {phoneSuccess && (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                     {phoneSuccess}
                   </div>
                 )}
                 {phoneError && (
-                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {phoneError}
                   </div>
@@ -275,7 +278,7 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="Enter 10-digit mobile number"
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
                       />
                       <Button
                         type="button"
@@ -289,10 +292,10 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                     </div>
 
                     {otpSent && (
-                      <div className="space-y-2 p-3 bg-slate-900/80 border border-cyan-500/30 rounded-xl">
-                        <div className="flex justify-between items-center text-xs text-slate-400">
+                      <div className="space-y-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div className="flex justify-between items-center text-xs text-gray-600">
                           <span>Enter 6-digit OTP code</span>
-                          <span className="text-cyan-400 font-mono">Demo OTP: {mockOtp}</span>
+                          <span className="text-blue-700 font-mono font-semibold">Demo OTP: {mockOtp}</span>
                         </div>
                         <div className="flex gap-2">
                           <input
@@ -301,7 +304,7 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                             value={otpCode}
                             onChange={(e) => setOtpCode(e.target.value)}
                             placeholder="654321"
-                            className="flex-1 bg-[#0b1329] border border-cyan-500/50 rounded-xl px-4 py-2 text-white text-center font-mono tracking-widest text-base focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                            className="flex-1 bg-white border border-blue-300 rounded-xl px-4 py-2 text-gray-900 text-center font-mono tracking-widest text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                           <Button
                             type="button"
@@ -320,44 +323,44 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
               </div>
 
               {/* Driving License Verification Box */}
-              <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <FileCheck className="w-5 h-5 text-indigo-400" />
+                    <FileCheck className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h4 className="font-semibold text-white">Driving License & Rider Verification</h4>
-                      <p className="text-xs text-slate-400">Verifies rider legal credentials to operate personal two-wheelers</p>
+                      <h4 className="font-semibold text-gray-900">Driving License & Rider Verification</h4>
+                      <p className="text-xs text-gray-500">Verifies rider legal credentials to operate personal two-wheelers</p>
                     </div>
                   </div>
                   {user?.is_dl_verified ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                       <ShieldCheck className="w-3.5 h-3.5" /> DL Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
                       Optional for Passengers
                     </span>
                   )}
                 </div>
 
                 {dlSuccess && (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                     {dlSuccess}
                   </div>
                 )}
                 {dlError && (
-                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {dlError}
                   </div>
                 )}
 
                 {user?.is_dl_verified ? (
-                  <div className="p-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl text-xs space-y-1">
-                    <p className="text-indigo-300 font-medium">Verified License Number:</p>
-                    <p className="font-mono text-white text-sm tracking-wider">{user.driving_license_number}</p>
-                    <p className="text-slate-400 text-[11px] pt-1">Your profile proudly showcases the 🛡️ Government DL Verified badge on all ride listings.</p>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1">
+                    <p className="text-blue-700 font-medium">Verified License Number:</p>
+                    <p className="font-mono text-gray-900 text-sm tracking-wider font-bold">{user.driving_license_number}</p>
+                    <p className="text-gray-500 text-[11px] pt-1">Your profile proudly showcases the 🛡️ Government DL Verified badge on all ride listings.</p>
                   </div>
                 ) : (
                   <form onSubmit={handleVerifyDL} className="space-y-3 pt-2">
@@ -367,7 +370,7 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                         value={dlNumber}
                         onChange={(e) => setDlNumber(e.target.value.toUpperCase())}
                         placeholder="e.g. KA-04-20220012345"
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white font-mono uppercase placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-900 font-mono uppercase placeholder-gray-400 focus:outline-none focus:border-blue-500"
                       />
                       <Button
                         type="submit"
@@ -378,7 +381,7 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                         {dlLoading ? 'Verifying...' : 'Verify License'}
                       </Button>
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-gray-500">
                       Riders who verify their Driving License receive up to 3x higher booking acceptance rates from trusted passengers.
                     </p>
                   </form>
@@ -391,13 +394,13 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
           {activeTab === 'sos' && (
             <div className="space-y-6">
               {/* Emergency SOS Banner */}
-              <div className="bg-gradient-to-r from-rose-950/60 to-red-950/40 border-2 border-rose-500/40 rounded-xl p-5 text-center space-y-4">
-                <div className="inline-flex p-3 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-5 text-center space-y-4">
+                <div className="inline-flex p-3 rounded-full bg-red-100 text-red-600 border border-red-300 animate-pulse">
                   <AlertTriangle className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">Emergency SOS Dispatch</h3>
-                  <p className="text-xs text-rose-200/80 max-w-md mx-auto mt-1">
+                  <h3 className="text-lg font-extrabold text-gray-900">Emergency SOS Dispatch</h3>
+                  <p className="text-xs text-gray-600 max-w-md mx-auto mt-1">
                     Pressing this button broadcasts your live ride details and coordinates to your emergency contact and displays immediate helpline access.
                   </p>
                 </div>
@@ -406,7 +409,7 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                   <button
                     onClick={handleTriggerSos}
                     disabled={sosLoading}
-                    className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-base rounded-xl shadow-lg shadow-rose-600/40 hover:shadow-rose-600/60 transition transform active:scale-95 disabled:opacity-50"
+                    className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold text-base rounded-xl shadow-lg transition transform active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     {sosLoading ? 'DISPATCHING EMERGENCY ALERT...' : '🚨 ACTIVATE EMERGENCY SOS NOW'}
                   </button>
@@ -415,37 +418,37 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
 
               {/* SOS Active Results */}
               {sosData && (
-                <div className="bg-[#0f172a] border border-rose-500/60 rounded-xl p-5 space-y-4 animate-fade-in">
-                  <div className="flex items-center justify-between text-rose-400 font-bold border-b border-rose-500/30 pb-2">
+                <div className="bg-white border border-red-300 rounded-xl p-5 space-y-4 shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between text-red-600 font-bold border-b border-red-100 pb-2">
                     <span className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5" /> Emergency Alert Dispatched
                     </span>
-                    <span className="font-mono text-xs text-slate-400">ID: {sosData.alert_id}</span>
+                    <span className="font-mono text-xs text-gray-500">ID: {sosData.alert_id}</span>
                   </div>
 
-                  <p className="text-xs text-slate-300">{sosData.alert_message}</p>
+                  <p className="text-xs text-gray-700">{sosData.alert_message}</p>
 
                   <div className="space-y-2">
-                    <h5 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Contacts Alerted:</h5>
+                    <h5 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Contacts Alerted:</h5>
                     {sosData.emergency_contacts_alerted.map((c, i) => (
-                      <div key={i} className="flex justify-between items-center bg-slate-900 p-2.5 rounded-lg text-xs">
-                        <span className="font-semibold text-white">{c.name} ({c.phone})</span>
-                        <span className="text-emerald-400 font-medium">{c.status}</span>
+                      <div key={i} className="flex justify-between items-center bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs">
+                        <span className="font-semibold text-gray-900">{c.name} ({c.phone})</span>
+                        <span className="text-emerald-600 font-medium">{c.status}</span>
                       </div>
                     ))}
                   </div>
 
                   <div className="pt-2">
-                    <h5 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Immediate Helplines (Click to Call):</h5>
+                    <h5 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Immediate Helplines (Click to Call):</h5>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {Object.entries(sosData.helpline_numbers).map(([name, num]) => (
                         <a
                           key={name}
                           href={`tel:${num}`}
-                          className="flex items-center justify-between p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg text-white font-semibold transition"
+                          className="flex items-center justify-between p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-900 font-semibold transition"
                         >
                           <span className="truncate pr-2">{name}</span>
-                          <span className="text-rose-400 font-mono font-bold flex items-center gap-1">
+                          <span className="text-red-600 font-mono font-bold flex items-center gap-1">
                             <PhoneCall className="w-3.5 h-3.5" /> {num}
                           </span>
                         </a>
@@ -456,23 +459,23 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
               )}
 
               {/* Emergency Contact Form */}
-              <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
                 <div className="flex items-center space-x-3">
-                  <HeartPulse className="w-5 h-5 text-rose-400" />
+                  <HeartPulse className="w-5 h-5 text-red-600" />
                   <div>
-                    <h4 className="font-semibold text-white">Trusted Emergency Contact</h4>
-                    <p className="text-xs text-slate-400">Parent, spouse, or close friend to be notified during SOS emergencies</p>
+                    <h4 className="font-semibold text-gray-900">Trusted Emergency Contact</h4>
+                    <p className="text-xs text-gray-500">Parent, spouse, or close friend to be notified during SOS emergencies</p>
                   </div>
                 </div>
 
                 {contactSuccess && (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                     {contactSuccess}
                   </div>
                 )}
                 {contactError && (
-                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {contactError}
                   </div>
@@ -481,23 +484,23 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
                 <form onSubmit={handleSaveContact} className="space-y-3 pt-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Contact Name</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Contact Name</label>
                       <input
                         type="text"
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
                         placeholder="e.g. Suresh Kumar"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Contact Phone</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Contact Phone</label>
                       <input
                         type="tel"
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
                         placeholder="e.g. 9876543210"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
                       />
                     </div>
                   </div>
@@ -519,38 +522,38 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
           {/* TAB 3: SAFETY STANDARDS & RULES */}
           {activeTab === 'standards' && (
             <div className="space-y-4">
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" /> 1. Mandatory Helmet for Both Rider and Passenger
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" /> 1. Mandatory Helmet for Both Rider and Passenger
                 </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-gray-600 leading-relaxed">
                   Indian Motor Vehicle Act requires both rider and pillion passenger to wear certified ISI helmets. Drivers must confirm whether they provide a spare sanitized helmet.
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" /> 2. Non-Commercial Personal Cost-Sharing
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" /> 2. Non-Commercial Personal Cost-Sharing
                 </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  RideShare operates strictly as a cost-sharing community for genuine commuters sharing personal fuel and vehicle wear expenses, capped to prevent commercial exploitation.
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  OkaDari operates strictly as a cost-sharing community for genuine commuters sharing personal fuel and vehicle wear expenses, capped to prevent commercial exploitation.
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" /> 3. Zero Tolerance for Rash Driving & Harassment
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" /> 3. Zero Tolerance for Rash Driving & Harassment
                 </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-gray-600 leading-relaxed">
                   Users reported for reckless driving, over-speeding, or improper conduct face immediate temporary suspension or permanent blocklisting from the network.
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" /> 4. Live Ride Tracking & Family Sharing
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" /> 4. Live Ride Tracking & Family Sharing
                 </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-gray-600 leading-relaxed">
                   Always keep your emergency contact updated so that our automated SOS trigger can instantly broadcast your live GPS trail to family members.
                 </p>
               </div>
@@ -559,8 +562,8 @@ export default function SafetyHubModal({ isOpen, onClose, initialTab = 'verify' 
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-[#090f20] flex justify-between items-center text-xs text-slate-400">
-          <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
+          <span className="flex items-center gap-1.5 text-blue-600 font-medium">
             <Lock className="w-3.5 h-3.5" /> 256-bit Encrypted Safety System
           </span>
           <Button variant="ghost" size="sm" onClick={onClose}>

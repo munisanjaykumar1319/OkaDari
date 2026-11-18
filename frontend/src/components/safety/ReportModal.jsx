@@ -60,27 +60,27 @@ export default function ReportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div 
-        className="bg-[#0b1329] border border-rose-500/40 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl shadow-rose-950/50"
+        className="bg-white border border-gray-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl text-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-[#140b17]">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-rose-50/50">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Report User</h3>
-              <p className="text-xs text-slate-400">
-                Reporting: <span className="text-rose-400 font-semibold">{reportedUserName || 'User'}</span>
+              <h3 className="text-lg font-bold text-gray-900">Report User</h3>
+              <p className="text-xs text-gray-500">
+                Reporting: <span className="text-rose-600 font-semibold">{reportedUserName || 'User'}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,18 +90,18 @@ export default function ReportModal({
         <div className="p-6 space-y-4 text-sm">
           {submitted ? (
             <div className="py-6 text-center space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+              <div className="inline-flex p-3 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
                 <CheckCircle className="w-8 h-8" />
               </div>
-              <h4 className="text-base font-bold text-white">Report Filed with Safety Team</h4>
-              <p className="text-xs text-slate-400">
+              <h4 className="text-base font-bold text-gray-900">Report Filed with Safety Team</h4>
+              <p className="text-xs text-gray-500">
                 We take safety violations seriously. {alsoBlock ? 'This user has also been blocked from matching with you.' : ''}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs flex items-center gap-2">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   {error}
                 </div>
@@ -109,13 +109,13 @@ export default function ReportModal({
 
               {/* Reason Selector */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Reason for Report
                 </label>
                 <select
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-rose-500"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-800 text-xs focus:outline-none focus:border-red-500"
                 >
                   <option value="RASH_DRIVING">Dangerous / Rash Driving or Overspeeding</option>
                   <option value="UNSAFE_BEHAVIOR">Unsafe or Inappropriate Behavior</option>
@@ -129,7 +129,7 @@ export default function ReportModal({
 
               {/* Description textarea */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Describe what happened *
                 </label>
                 <textarea
@@ -138,21 +138,21 @@ export default function ReportModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Provide specific details about time, location, and behavior..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-rose-500 resize-none"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-800 placeholder-gray-400 text-xs focus:outline-none focus:border-red-500 resize-none"
                 />
               </div>
 
               {/* Block user checkbox */}
-              <div className="flex items-center gap-2 pt-1 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-2 pt-1 p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <input
                   type="checkbox"
                   id="blockUserCheck"
                   checked={alsoBlock}
                   onChange={(e) => setAlsoBlock(e.target.checked)}
-                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-700 bg-slate-800 cursor-pointer"
+                  className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-gray-300 cursor-pointer"
                 />
-                <label htmlFor="blockUserCheck" className="text-xs text-slate-300 cursor-pointer flex items-center gap-1.5 font-medium">
-                  <UserX className="w-3.5 h-3.5 text-rose-400" />
+                <label htmlFor="blockUserCheck" className="text-xs text-gray-700 cursor-pointer flex items-center gap-1.5 font-medium">
+                  <UserX className="w-3.5 h-3.5 text-red-600" />
                   Block this user from seeing or matching my rides
                 </label>
               </div>
@@ -171,7 +171,7 @@ export default function ReportModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition disabled:opacity-50"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-xl shadow-sm transition disabled:opacity-50"
                 >
                   {loading ? 'Submitting...' : 'Submit Incident Report'}
                 </button>

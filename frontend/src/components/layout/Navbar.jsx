@@ -46,7 +46,6 @@ export default function Navbar() {
     navigate('/');
   };
 
-  // Generate initials for avatar
   const initials = user?.full_name
     ? user.full_name
         .split(' ')
@@ -57,20 +56,20 @@ export default function Navbar() {
     : 'U';
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#14213D]/95 backdrop-blur-md border-b border-blue-900/40 shadow-sm">
+    <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 text-gray-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition">
+              <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition">
                 <Bike className="w-6 h-6 text-white transform group-hover:-rotate-6 transition duration-200" />
               </div>
               <div>
-                <span className="font-extrabold text-xl tracking-tight text-white">
-                  Oka<span className="text-blue-400">Dari</span>
+                <span className="font-extrabold text-xl tracking-tight text-gray-900">
+                  Oka<span className="text-[#2563EB]">Dari</span>
                 </span>
-                <span className="block text-[10px] text-blue-200 uppercase tracking-widest font-semibold">
+                <span className="block text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
                   One Route. One Ride.
                 </span>
               </div>
@@ -87,11 +86,11 @@ export default function Navbar() {
                     to={link.path}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition duration-150 ${
                       active
-                        ? 'bg-slate-800/90 text-cyan-400 border border-slate-700/80 shadow-inner'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                        ? 'bg-blue-50 text-blue-600 font-semibold border border-blue-200/60 shadow-sm'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
+                    <Icon className={`w-4 h-4 ${active ? 'text-blue-600' : 'text-gray-400'}`} />
                     {link.name}
                   </Link>
                 );
@@ -104,10 +103,10 @@ export default function Navbar() {
             {/* Safety Hub & SOS Button */}
             <button
               onClick={() => setSafetyModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/50 transition text-xs font-semibold shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition text-xs font-semibold shadow-sm cursor-pointer"
               title="Open Safety & Verification Center"
             >
-              <ShieldCheck className="w-4 h-4 text-rose-400" />
+              <ShieldCheck className="w-4 h-4 text-rose-500" />
               <span>Safety & SOS</span>
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
             </button>
@@ -119,9 +118,9 @@ export default function Navbar() {
             </Link>
 
             {/* Notification Bell */}
-            <button className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+            <button className="relative p-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600"></span>
             </button>
 
             {/* User Profile or Sign In */}
@@ -129,44 +128,44 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition text-left"
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition text-left"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                  <div className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center text-xs font-bold text-white shadow-sm">
                     {initials}
                   </div>
                   <div className="hidden lg:block">
-                    <div className="text-xs font-semibold text-slate-200">{user.full_name}</div>
-                    <div className="text-[10px] text-cyan-400 flex items-center gap-1 capitalize">
+                    <div className="text-xs font-semibold text-gray-800">{user.full_name}</div>
+                    <div className="text-[10px] text-blue-600 flex items-center gap-1 capitalize">
                       <ShieldCheck className="w-2.5 h-2.5" /> {user.role}
                     </div>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-1" />
                 </button>
 
                 {profileOpen && (
                   <div 
-                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-[#0c1424] border border-slate-800 p-2 shadow-2xl z-50 text-xs"
+                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-white border border-gray-200 p-2 shadow-xl z-50 text-xs"
                     onClick={() => setProfileOpen(false)}
                   >
-                    <div className="px-3 py-2 border-b border-slate-800 text-slate-400">
-                      Signed in as <span className="font-semibold text-white block truncate">{user.email}</span>
+                    <div className="px-3 py-2 border-b border-gray-100 text-gray-500">
+                      Signed in as <span className="font-semibold text-gray-900 block truncate">{user.email}</span>
                       {user.bike_model && (
-                        <span className="text-[10px] text-slate-400 block mt-0.5">🏍️ {user.bike_model}</span>
+                        <span className="text-[10px] text-gray-500 block mt-0.5">🏍️ {user.bike_model}</span>
                       )}
                     </div>
-                    <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg">
-                      <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> Dashboard
+                    <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" /> Dashboard
                     </Link>
                     <button 
                       onClick={() => setSafetyModalOpen(true)}
-                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-rose-300 hover:text-white hover:bg-slate-800/80 rounded-lg cursor-pointer"
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                     >
-                      <ShieldCheck className="w-3.5 h-3.5 text-rose-400" /> Safety Center & SOS
+                      <ShieldCheck className="w-3.5 h-3.5 text-rose-500" /> Safety Center & SOS
                     </button>
-                    <div className="border-t border-slate-800 my-1"></div>
+                    <div className="border-t border-gray-100 my-1"></div>
                     <button 
                       onClick={handleSignOut}
-                      className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/40 rounded-lg flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
                     >
                       <LogOut className="w-3.5 h-3.5" /> Sign Out
                     </button>
@@ -193,7 +192,7 @@ export default function Navbar() {
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+              className="p-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -201,47 +200,40 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu dropdown */}
+      {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-800 bg-[#090e1b] px-4 pt-2 pb-6 space-y-2">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.path);
-            return (
-              <Link
-                key={link.name}
-                to={link.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${
-                  active
-                    ? 'bg-slate-800 text-cyan-400 border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
-                {link.name}
-              </Link>
-            );
-          })}
-          <div className="pt-2 flex flex-col gap-2">
-            {isAuthenticated ? (
-              <Button size="md" variant="outline" className="w-full" onClick={handleSignOut} icon={LogOut}>
-                Sign Out ({user.full_name})
+        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4 space-y-2">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.path}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium ${
+                isActive(link.path)
+                  ? 'bg-blue-50 text-blue-600 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <link.icon className="w-4 h-4" />
+              {link.name}
+            </Link>
+          ))}
+          <div className="pt-2 border-t border-gray-100">
+            <button
+              onClick={() => { setSafetyModalOpen(true); setMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-rose-50 text-rose-600 font-semibold text-xs border border-rose-200 mb-2"
+            >
+              <ShieldCheck className="w-4 h-4" /> Safety Center & SOS
+            </button>
+            <Link
+              to="/offer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full block"
+            >
+              <Button size="md" variant="primary" icon={PlusCircle} className="w-full">
+                Offer a Ride
               </Button>
-            ) : (
-              <>
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="md" variant="outline" className="w-full" icon={LogIn}>
-                    Sign In
-                  </Button>
-                </Link>
-                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button size="md" variant="primary" className="w-full">
-                    Register
-                  </Button>
-                </Link>
-              </>
-            )}
+            </Link>
           </div>
         </div>
       )}

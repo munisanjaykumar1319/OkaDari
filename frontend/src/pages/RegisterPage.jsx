@@ -54,21 +54,21 @@ export default function RegisterPage() {
   const isRiderRole = formData.role === 'rider' || formData.role === 'both';
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
+    <div className="max-w-2xl mx-auto px-4 py-12 bg-[#F8FAFC]">
       <div className="text-center space-y-2 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/20">
+        <div className="w-12 h-12 rounded-2xl bg-[#2563EB] flex items-center justify-center mx-auto shadow-md shadow-blue-500/20">
           <Bike className="w-7 h-7 text-white" />
         </div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Create Your Commuter Account</h1>
-        <p className="text-xs text-slate-400">
+        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Create Your OkaDari Account</h1>
+        <p className="text-xs text-gray-500">
           Join our verified smart bike ride-sharing community and travel safer together
         </p>
       </div>
 
       <Card className="space-y-6">
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-800/60 flex items-start gap-3 text-xs text-rose-300">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-xs text-red-600">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
@@ -76,8 +76,8 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Section 1: Role Selection */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Select Your Commuter Role <span className="text-cyan-400">*</span>
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+              Select Your Commuter Role <span className="text-blue-600">*</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
@@ -91,13 +91,13 @@ export default function RegisterPage() {
                   onClick={() => setFormData({ ...formData, role: r.id })}
                   className={`p-3.5 rounded-xl border text-left transition duration-150 ${
                     formData.role === r.id
-                      ? 'bg-cyan-950/60 border-cyan-500/80 ring-1 ring-cyan-500/40 shadow-sm'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                      ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500/30 shadow-sm'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <div className="text-xl mb-1">{r.icon}</div>
-                  <div className="text-xs font-bold text-white">{r.title}</div>
-                  <div className="text-[10px] text-slate-400">{r.desc}</div>
+                  <div className="text-xs font-bold text-gray-900">{r.title}</div>
+                  <div className="text-[10px] text-gray-500">{r.desc}</div>
                 </button>
               ))}
             </div>
@@ -148,8 +148,8 @@ export default function RegisterPage() {
 
           {/* Section 3: Bike Details (Shown if Rider or Both) */}
           {isRiderRole && (
-            <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
+            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-700">
                 <Bike className="w-4 h-4" /> Two-Wheeler Specifications
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -172,8 +172,8 @@ export default function RegisterPage() {
           )}
 
           {/* Section 4: Emergency Contact */}
-          <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
               <HeartHandshake className="w-4 h-4" /> Emergency Contact (Safety Protocol)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -202,9 +202,9 @@ export default function RegisterPage() {
             Complete Registration & Join
           </Button>
 
-          <div className="text-center text-xs text-slate-400">
+          <div className="text-center text-xs text-gray-500">
             Already have an account?{' '}
-            <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1">
+            <Link to="/login" className="text-blue-600 hover:underline font-semibold inline-flex items-center gap-1">
               Sign In <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

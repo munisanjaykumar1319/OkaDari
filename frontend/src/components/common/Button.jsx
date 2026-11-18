@@ -12,15 +12,15 @@ export default function Button({
   iconPosition = 'left',
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#070b14] disabled:opacity-50 disabled:cursor-not-allowed select-none';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 focus:ring-cyan-500 active:scale-[0.98]',
-    secondary: 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 border border-slate-700/80 hover:border-slate-600 shadow-sm focus:ring-slate-500 active:scale-[0.98]',
-    outline: 'border border-slate-700/80 hover:border-cyan-500/80 text-slate-300 hover:text-white hover:bg-slate-800/40 focus:ring-cyan-500',
-    ghost: 'text-slate-400 hover:text-white hover:bg-slate-800/50 focus:ring-slate-500',
-    danger: 'bg-rose-600/90 hover:bg-rose-500 text-white shadow-md shadow-rose-900/30 focus:ring-rose-500',
-    success: 'bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/30 focus:ring-emerald-500',
+    primary: 'bg-[#2563EB] hover:bg-blue-700 text-white shadow-sm hover:shadow-md focus:ring-blue-500 active:scale-[0.98]',
+    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 shadow-sm focus:ring-gray-300 active:scale-[0.98]',
+    outline: 'border border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 focus:ring-blue-500',
+    ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-300',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500',
+    success: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
   };
 
   const sizes = {
