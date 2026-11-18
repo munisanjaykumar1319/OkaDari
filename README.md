@@ -10,8 +10,8 @@ A modern, full-stack, smart bike ride-sharing and cost-sharing platform engineer
 |:---:|:---|:---|:---:|
 | **01** | **Project Setup** | Folder structure, React + Vite, FastAPI, Python venv, API connection | **Completed** ✅ |
 | **02** | **UI/UX Design** | Dark navy design system, responsive navbar, landing page, dashboard layouts | **Completed** ✅ |
-| **03** | **Database Design** | Users, Rides, Bookings, Reviews, Reports tables & relations | *Next Up* ⏳ |
-| **04** | **User Authentication** | Registration, login, password hashing (bcrypt), JWT, roles | *Upcoming* |
+| **03** | **Database Design** | Users, Rides, Bookings, Reviews, Reports tables & relations | **Completed** ✅ |
+| **04** | **User Authentication** | Registration, login, password hashing (bcrypt), JWT, roles | *Next Up* ⏳ |
 | **05** | **Offer a Ride** | Starting point, destination, departure time, seats, bike info, fair contribution | *Upcoming* |
 | **06** | **Find a Ride** | Search, location filtering, date/time filtering, listing active rides | *Upcoming* |
 | **07** | **Smart Ride Matching** | Location comparison, route similarity scoring, time compatibility | *Upcoming* |
