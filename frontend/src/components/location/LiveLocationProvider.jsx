@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Navigation, Pause, Play, Square, Wifi, WifiOff } from 'lucide-react';
 
-const API_BASE = '/api/v1/rides';
+const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api/v1/rides';
 const UPDATE_INTERVAL_MS = 7000; // 7 seconds
 
 export default function LiveLocationProvider({ rideId, token }) {

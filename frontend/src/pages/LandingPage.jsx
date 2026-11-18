@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import {
   Bike, ArrowRight, ShieldCheck, Percent, Leaf, Sparkles,
@@ -90,9 +91,8 @@ export default function LandingPage() {
 
   /** Fetch nearby rides from backend */
   useEffect(() => {
-    fetch('/api/v1/rides/search?limit=6')
-      .then((r) => r.json())
-      .then((data) => setNearbyRides(Array.isArray(data) ? data.slice(0, 6) : []))
+    axios.get('/api/v1/rides/search?limit=6')
+      .then((res) => setNearbyRides(Array.isArray(res.data) ? res.data.slice(0, 6) : []))
       .catch(() => {});
   }, []);
 

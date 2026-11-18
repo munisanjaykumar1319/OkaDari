@@ -68,8 +68,18 @@ export default function LiveLocationViewer({ rideId, token, onClose }) {
   const [mapCenter] = useState([17.3850, 78.4867]);
 
   const connectWs = useCallback(() => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProtocol}://${window.location.host}/api/v1/rides/${rideId}/location/ws?token=${token}`;
+    let host = window.location.host;
+    let wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    if (import.meta.env.VITE_API_URL) {
+      try {
+        const url = new URL(import.meta.env.VITE_API_URL);
+        host = url.host;
+        wsProtocol = url.protocol === 'https:' ? 'wss' : 'ws';
+      } catch (e) {
+        // fallback
+      }
+    }
+    const wsUrl = `${wsProtocol}://${host}/api/v1/rides/${rideId}/location/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
