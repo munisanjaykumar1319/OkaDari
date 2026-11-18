@@ -43,3 +43,4 @@ class User(Base):
     reviews_received = relationship("Review", foreign_keys="Review.reviewee_id", back_populates="reviewee")
     reports_filed = relationship("Report", foreign_keys="Report.reporter_id", back_populates="reporter")
     reports_against = relationship("Report", foreign_keys="Report.reported_user_id", back_populates="reported_user")
+    blocked_users = relationship("BlockedUser", foreign_keys="BlockedUser.blocker_id", cascade="all, delete-orphan")

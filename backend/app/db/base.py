@@ -7,3 +7,4 @@ from app.models.ride import Ride
 from app.models.booking import Booking
 from app.models.review import Review
 from app.models.report import Report
+from app.models.blocked_user import BlockedUser

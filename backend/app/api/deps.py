@@ -48,6 +48,24 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(reusable_oauth2)
+) -> Optional[User]:
+    if not token:
+        return None
+    payload = decode_access_token(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    try:
+        return db.query(User).filter(User.id == int(user_id)).first()
+    except Exception:
+        return None
+
+
 def get_current_rider(
     current_user: User = Depends(get_current_user)
 ) -> User:

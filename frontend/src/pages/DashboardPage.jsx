@@ -19,7 +19,9 @@ import {
   RefreshCw,
   UserCheck,
   UserX,
-  MessageSquare
+  MessageSquare,
+  HeartPulse,
+  ShieldAlert
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +31,9 @@ import Card, { CardHeader } from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
+import SafetyHubModal from '../components/safety/SafetyHubModal';
+import ReviewModal from '../components/safety/ReviewModal';
+import ReportModal from '../components/safety/ReportModal';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -41,6 +46,9 @@ export default function DashboardPage() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [safetyModalOpen, setSafetyModalOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
 
   // Active user profile
   const user = authUser ? {
@@ -115,6 +123,8 @@ export default function DashboardPage() {
           time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           bikeModel: r.bike_model || 'Two Wheeler',
           partnerName: r.rider?.full_name ? `${r.rider.full_name} (Rider)` : 'Host Rider',
+          rawRiderName: r.rider?.full_name || 'Host Rider',
+          riderId: r.rider_id,
           distanceKm: r.distance_km || 10.0,
           cost: b.agreed_contribution,
           canCancel: b.status === 'PENDING' || b.status === 'ACCEPTED'
@@ -262,6 +272,57 @@ export default function DashboardPage() {
           >
             Offer New Ride
           </Button>
+        </div>
+      </div>
+
+      {/* Safety, Verification & SOS Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-[#091124] border border-cyan-500/20 shadow-lg text-xs">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-white">Identity & Verification</div>
+            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span>Phone: {authUser?.is_verified ? 'Verified ✅' : 'Unverified ⚠️'}</span>
+              <span>•</span>
+              <span>DL: {authUser?.is_dl_verified ? 'Verified 🛡️' : 'Optional'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <Star className="w-5 h-5 fill-amber-400" />
+          </div>
+          <div>
+            <div className="font-bold text-white">Trust & Rating Score</div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              {authUser?.rating_avg || 5.0} ⭐ ({authUser?.rating_count || 0} reviews)
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
+            <HeartPulse className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-white">Emergency Contact</div>
+            <div className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[150px]">
+              {authUser?.emergency_contact_name ? `${authUser.emergency_contact_name} (${authUser.emergency_contact_phone})` : 'Not configured'}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-start md:justify-end">
+          <button
+            onClick={() => setSafetyModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold transition shadow-md shadow-rose-600/30 flex items-center gap-2 cursor-pointer"
+          >
+            <HeartPulse className="w-4 h-4 animate-pulse" />
+            <span>Safety & SOS Hub</span>
+          </button>
         </div>
       </div>
 
@@ -443,6 +504,42 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Safety, Review & Report Action for Passenger Bookings */}
+            {selectedRide.role === 'booked' && (selectedRide.status === 'ACCEPTED' || selectedRide.status === 'COMPLETED') && (
+              <div className="flex gap-2 pt-2 border-t border-slate-800">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Star}
+                  onClick={() => {
+                    setReviewTarget({
+                      rideId: selectedRide.rideId || selectedRide.id,
+                      revieweeId: selectedRide.riderId,
+                      revieweeName: selectedRide.rawRiderName || selectedRide.partnerName
+                    });
+                    setSelectedRide(null);
+                  }}
+                >
+                  Rate Experience
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={ShieldAlert}
+                  onClick={() => {
+                    setReportTarget({
+                      userId: selectedRide.riderId,
+                      userName: selectedRide.rawRiderName || selectedRide.partnerName,
+                      rideId: selectedRide.rideId || selectedRide.id
+                    });
+                    setSelectedRide(null);
+                  }}
+                >
+                  Report / Block
+                </Button>
+              </div>
+            )}
+
             <div className="flex justify-between items-center pt-2">
               {/* If booked and can cancel */}
               {selectedRide.role === 'booked' && selectedRide.canCancel && (
@@ -477,6 +574,36 @@ export default function DashboardPage() {
           </div>
         )}
       </Modal>
+
+      {/* Safety Hub & Emergency SOS Modal */}
+      <SafetyHubModal 
+        isOpen={safetyModalOpen} 
+        onClose={() => setSafetyModalOpen(false)} 
+      />
+
+      {/* Rating & Review Modal */}
+      {reviewTarget && (
+        <ReviewModal
+          isOpen={!!reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          rideId={reviewTarget.rideId}
+          revieweeId={reviewTarget.revieweeId}
+          revieweeName={reviewTarget.revieweeName}
+          onSuccess={() => loadDashboardData()}
+        />
+      )}
+
+      {/* Report & Block Modal */}
+      {reportTarget && (
+        <ReportModal
+          isOpen={!!reportTarget}
+          onClose={() => setReportTarget(null)}
+          reportedUserId={reportTarget.userId}
+          reportedUserName={reportTarget.userName}
+          rideId={reportTarget.rideId}
+          onSuccess={() => loadDashboardData()}
+        />
+      )}
     </div>
   );
 }

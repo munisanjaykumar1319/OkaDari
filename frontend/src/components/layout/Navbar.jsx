@@ -12,15 +12,18 @@ import {
   ShieldCheck,
   ChevronDown,
   LogIn,
-  LogOut
+  LogOut,
+  HeartPulse
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
+import SafetyHubModal from '../safety/SafetyHubModal';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [safetyModalOpen, setSafetyModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -98,6 +101,17 @@ export default function Navbar() {
 
           {/* Right Action Icons & Profile */}
           <div className="hidden md:flex items-center space-x-3">
+            {/* Safety Hub & SOS Button */}
+            <button
+              onClick={() => setSafetyModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/50 transition text-xs font-semibold shadow-sm cursor-pointer"
+              title="Open Safety & Verification Center"
+            >
+              <ShieldCheck className="w-4 h-4 text-rose-400" />
+              <span>Safety & SOS</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+            </button>
+
             <Link to="/offer">
               <Button size="sm" variant="primary" icon={PlusCircle}>
                 Offer a Ride
@@ -143,6 +157,12 @@ export default function Navbar() {
                     <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg">
                       <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> Dashboard
                     </Link>
+                    <button 
+                      onClick={() => setSafetyModalOpen(true)}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-rose-300 hover:text-white hover:bg-slate-800/80 rounded-lg cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-rose-400" /> Safety Center & SOS
+                    </button>
                     <div className="border-t border-slate-800 my-1"></div>
                     <button 
                       onClick={handleSignOut}
@@ -225,6 +245,12 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Global Safety & Emergency SOS Modal */}
+      <SafetyHubModal 
+        isOpen={safetyModalOpen} 
+        onClose={() => setSafetyModalOpen(false)} 
+      />
     </nav>
   );
 }

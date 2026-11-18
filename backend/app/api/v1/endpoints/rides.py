@@ -7,10 +7,11 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.ride import Ride
 from app.models.booking import Booking
+from app.models.blocked_user import BlockedUser
 from app.schemas.ride import RideCreate, RideUpdate, RideResponse
 from app.schemas.matching import SmartMatchRequest, SmartMatchResponse, SmartMatchItem
 from app.services.matching import compute_smart_ride_match
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_optional_current_user
 
 router = APIRouter()
 
@@ -104,12 +105,20 @@ def search_rides(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     query = db.query(Ride).filter(
         Ride.status == "OPEN",
         Ride.departure_time >= datetime.utcnow(),
         Ride.available_seats >= 1
     )
+
+    if current_user:
+        blocked_ids = [b.blocked_user_id for b in db.query(BlockedUser).filter(BlockedUser.blocker_id == current_user.id).all()]
+        blocker_ids = [b.blocker_id for b in db.query(BlockedUser).filter(BlockedUser.blocked_user_id == current_user.id).all()]
+        excluded_ids = set(blocked_ids + blocker_ids)
+        if excluded_ids:
+            query = query.filter(~Ride.rider_id.in_(excluded_ids))
 
     if origin and origin.strip():
         query = query.filter(Ride.origin.ilike(f"%{origin.strip()}%"))
@@ -153,13 +162,23 @@ def search_rides(
 def smart_match_rides(
     req: SmartMatchRequest,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     # Search for all open upcoming rides
-    candidate_rides = db.query(Ride).filter(
+    candidate_query = db.query(Ride).filter(
         Ride.status == "OPEN",
         Ride.departure_time >= datetime.utcnow(),
         Ride.available_seats >= 1
-    ).all()
+    )
+
+    if current_user:
+        blocked_ids = [b.blocked_user_id for b in db.query(BlockedUser).filter(BlockedUser.blocker_id == current_user.id).all()]
+        blocker_ids = [b.blocker_id for b in db.query(BlockedUser).filter(BlockedUser.blocked_user_id == current_user.id).all()]
+        excluded_ids = set(blocked_ids + blocker_ids)
+        if excluded_ids:
+            candidate_query = candidate_query.filter(~Ride.rider_id.in_(excluded_ids))
+
+    candidate_rides = candidate_query.all()
 
     p_origin_coords = (req.origin_lat, req.origin_lon) if (req.origin_lat and req.origin_lon) else None
     p_dest_coords = (req.destination_lat, req.destination_lon) if (req.destination_lat and req.destination_lon) else None

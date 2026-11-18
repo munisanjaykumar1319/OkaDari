@@ -17,6 +17,8 @@ class ReportCreate(ReportBase):
 class ReportResponse(ReportBase):
     id: int
     reporter_id: int
+    reporter_name: Optional[str] = None
+    reported_user_name: Optional[str] = None
     status: str
     created_at: datetime
     resolved_at: Optional[datetime] = None

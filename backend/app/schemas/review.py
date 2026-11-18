@@ -17,6 +17,16 @@ class ReviewCreate(ReviewBase):
 class ReviewResponse(ReviewBase):
     id: int
     reviewer_id: int
+    reviewer_name: Optional[str] = None
+    reviewee_name: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserRatingSummary(BaseModel):
+    user_id: int
+    rating_avg: float
+    rating_count: int
+    reviews: list[ReviewResponse] = []
+

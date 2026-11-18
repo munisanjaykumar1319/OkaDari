@@ -18,7 +18,8 @@ import {
   Sparkles,
   Zap,
   Compass,
-  Navigation
+  Navigation,
+  ShieldAlert
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import CostBreakdownModal from '../components/cost/CostBreakdownModal';
+import ReportModal from '../components/safety/ReportModal';
 
 export default function FindRidePage() {
   const [searchParams] = useSearchParams();
@@ -49,6 +51,7 @@ export default function FindRidePage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
+  const [reportUserTarget, setReportUserTarget] = useState(null);
 
   // Fallback sample rides when local DB has no active rides
   const fallbackRides = [
@@ -147,9 +150,12 @@ export default function FindRidePage() {
               to: r.destination,
               date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
               time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              riderId: r.rider_id,
               riderName: r.rider?.full_name || 'Verified Rider',
-              rating: r.rider?.rating_avg || 4.9,
-              reviewsCount: r.rider?.rating_count || 12,
+              isVerified: r.rider?.is_verified || false,
+              isDlVerified: r.rider?.is_dl_verified || false,
+              rating: r.rider?.rating_avg || 5.0,
+              reviewsCount: r.rider?.rating_count || 0,
               bikeModel: r.bike_model,
               bikePlate: r.bike_plate,
               distanceKm: r.distance_km || 10.0,
@@ -187,9 +193,12 @@ export default function FindRidePage() {
             to: r.destination,
             date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            riderId: r.rider_id,
             riderName: r.rider?.full_name || 'Verified Rider',
-            rating: r.rider?.rating_avg || 4.9,
-            reviewsCount: r.rider?.rating_count || 12,
+            isVerified: r.rider?.is_verified || false,
+            isDlVerified: r.rider?.is_dl_verified || false,
+            rating: r.rider?.rating_avg || 5.0,
+            reviewsCount: r.rider?.rating_count || 0,
             bikeModel: r.bike_model,
             bikePlate: r.bike_plate,
             distanceKm: r.distance_km || 10.0,
@@ -473,21 +482,44 @@ export default function FindRidePage() {
               </div>
 
               {/* Rider Trust Profile */}
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                  {ride.riderName.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-white flex items-center gap-1">
-                    {ride.riderName}
-                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow-md">
+                    {ride.riderName.split(' ').map(n => n[0]).join('')}
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-amber-400">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    <span>{ride.rating}</span>
-                    <span className="text-slate-500">({ride.reviewsCount} reviews)</span>
+                  <div>
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                      <span>{ride.riderName}</span>
+                      {ride.isDlVerified ? (
+                        <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5" title="Government DL Verified Rider">
+                          <ShieldCheck className="w-3 h-3 text-indigo-400" /> DL Verified
+                        </span>
+                      ) : (
+                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] mt-0.5">
+                      <div className="flex items-center gap-1 text-amber-400">
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <span>{ride.rating}</span>
+                        <span className="text-slate-500">({ride.reviewsCount} reviews)</span>
+                      </div>
+                      {ride.isVerified && (
+                        <span className="text-emerald-400 text-[10px] font-medium">• Phone Verified</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Report or Block user action */}
+                <button
+                  type="button"
+                  onClick={() => setReportUserTarget({ userId: ride.riderId, userName: ride.riderName, rideId: ride.id })}
+                  className="text-[10px] text-slate-500 hover:text-rose-400 flex items-center justify-end gap-1 transition self-end cursor-pointer"
+                  title="Report or Block this user"
+                >
+                  <ShieldAlert className="w-3 h-3" /> Report / Block
+                </button>
               </div>
 
               {/* Price & Booking Button */}
@@ -597,6 +629,16 @@ export default function FindRidePage() {
           isEv={costBreakdownRide.bikeModel?.toLowerCase().includes('ev') || costBreakdownRide.bikeModel?.toLowerCase().includes('ather')}
         />
       )}
+
+      {/* Incident Report / Block Modal */}
+      <ReportModal
+        isOpen={!!reportUserTarget}
+        onClose={() => setReportUserTarget(null)}
+        reportedUserId={reportUserTarget?.userId}
+        reportedUserName={reportUserTarget?.userName}
+        rideId={reportUserTarget?.rideId}
+        onSuccess={() => fetchRides()}
+      />
     </div>
   );
 }
