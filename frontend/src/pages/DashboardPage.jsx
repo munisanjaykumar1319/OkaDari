@@ -11,12 +11,15 @@ import {
   TrendingUp, 
   ShieldCheck, 
   Star, 
-  Search,
-  CheckCircle2,
-  AlertCircle,
-  LogIn,
-  XCircle,
-  RefreshCw
+  Search, 
+  CheckCircle2, 
+  AlertCircle, 
+  LogIn, 
+  XCircle, 
+  RefreshCw,
+  UserCheck,
+  UserX,
+  MessageSquare
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -32,9 +35,12 @@ export default function DashboardPage() {
   const { user: authUser, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedRide, setSelectedRide] = useState(null);
+  
   const [offeredRides, setOfferedRides] = useState([]);
-  const [loadingRides, setLoadingRides] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [myBookings, setMyBookings] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Active user profile
   const user = authUser ? {
@@ -66,30 +72,14 @@ export default function DashboardPage() {
     .toUpperCase()
     .slice(0, 2);
 
-  // Fallback demo bookings
-  const mockBookings = [
-    {
-      id: 991,
-      role: 'booked',
-      status: 'Confirmed',
-      from: 'Jubilee Hills Check Post',
-      to: 'Madhapur Metro Station',
-      date: 'Tomorrow',
-      time: '06:30 PM',
-      bikeModel: 'Honda CB350',
-      partnerName: 'Karthik Rao (Rider)',
-      distanceKm: 8.5,
-      cost: 35
-    }
-  ];
-
-  // Fetch real offered rides if authenticated
-  const fetchMyOfferedRides = async () => {
+  // Fetch real offered rides & bookings
+  const loadDashboardData = async () => {
     if (!isAuthenticated) return;
-    setLoadingRides(true);
+    setLoadingData(true);
     try {
-      const response = await axios.get('/api/v1/rides/my-offered');
-      const mapped = response.data.map(r => {
+      // 1. Fetch Offered Rides
+      const offeredRes = await axios.get('/api/v1/rides/my-offered');
+      const mappedOffered = offeredRes.data.map(r => {
         const d = new Date(r.departure_time);
         return {
           id: r.id,
@@ -106,41 +96,122 @@ export default function DashboardPage() {
           canCancel: r.status === 'OPEN'
         };
       });
-      setOfferedRides(mapped);
+      setOfferedRides(mappedOffered);
+
+      // 2. Fetch Passenger Bookings
+      const bookingsRes = await axios.get('/api/v1/bookings/my-bookings');
+      const mappedBookings = bookingsRes.data.map(b => {
+        const r = b.ride || {};
+        const d = r.departure_time ? new Date(r.departure_time) : new Date();
+        return {
+          id: b.id,
+          bookingId: b.id,
+          rideId: b.ride_id,
+          role: 'booked',
+          status: b.status,
+          from: r.origin || b.pickup_point || 'Pickup Point',
+          to: r.destination || 'Destination Point',
+          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          bikeModel: r.bike_model || 'Two Wheeler',
+          partnerName: r.rider?.full_name ? `${r.rider.full_name} (Rider)` : 'Host Rider',
+          distanceKm: r.distance_km || 10.0,
+          cost: b.agreed_contribution,
+          canCancel: b.status === 'PENDING' || b.status === 'ACCEPTED'
+        };
+      });
+      setMyBookings(mappedBookings);
+
+      // 3. For every open offered ride, check for pending requests
+      const allRequests = [];
+      for (const ride of offeredRes.data) {
+        if (ride.status === 'OPEN' || ride.status === 'FULL') {
+          try {
+            const reqRes = await axios.get(`/api/v1/bookings/ride/${ride.id}/requests`);
+            for (const item of reqRes.data) {
+              if (item.status === 'PENDING') {
+                allRequests.push({ ...item, rideOrigin: ride.origin, rideDest: ride.destination });
+              }
+            }
+          } catch (e) {
+            // Ignored
+          }
+        }
+      }
+      setPendingRequests(allRequests);
     } catch (err) {
-      console.warn('Could not load offered rides from server:', err);
+      console.warn('Dashboard data fetch warning:', err);
     } finally {
-      setLoadingRides(false);
+      setLoadingData(false);
     }
   };
 
   useEffect(() => {
-    fetchMyOfferedRides();
+    loadDashboardData();
   }, [isAuthenticated]);
+
+  // Booking Actions
+  const handleAcceptRequest = async (bookingId) => {
+    setActionLoading(true);
+    try {
+      await axios.patch(`/api/v1/bookings/${bookingId}/accept`);
+      await loadDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to accept booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (bookingId) => {
+    setActionLoading(true);
+    try {
+      await axios.patch(`/api/v1/bookings/${bookingId}/reject`);
+      await loadDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to reject booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    setActionLoading(true);
+    try {
+      await axios.patch(`/api/v1/bookings/${bookingId}/cancel`);
+      await loadDashboardData();
+      setSelectedRide(null);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to cancel booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleCancelRide = async (rideId) => {
     if (!confirm('Are you sure you want to cancel this ride offer?')) return;
-    setCancelling(true);
+    setActionLoading(true);
     try {
       await axios.patch(`/api/v1/rides/${rideId}/cancel`);
-      await fetchMyOfferedRides();
+      await loadDashboardData();
       setSelectedRide(null);
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to cancel ride');
     } finally {
-      setCancelling(false);
+      setActionLoading(false);
     }
   };
 
   // Combine rides for display
-  const allRides = [...offeredRides, ...mockBookings];
+  const allRides = [...offeredRides, ...myBookings];
 
   const displayedRides = 
     activeTab === 'overview' 
       ? allRides 
       : activeTab === 'offered' 
         ? offeredRides 
-        : mockBookings;
+        : myBookings;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -194,19 +265,68 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Incoming Booking Requests Alert (For Riders) */}
+      {pendingRequests.length > 0 && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border border-amber-600/50 shadow-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-400">
+              <Users className="w-4 h-4" />
+              <span>You have {pendingRequests.length} incoming booking request(s)!</span>
+            </div>
+            <Badge variant="warning" size="sm" dot>Pending Approval</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {pendingRequests.map(req => (
+              <div key={req.id} className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-4 text-xs">
+                <div>
+                  <div className="font-semibold text-white">Passenger Request #{req.id}</div>
+                  <div className="text-[11px] text-slate-400">
+                    Route: {req.rideOrigin} &rarr; {req.rideDest}
+                  </div>
+                  <div className="text-[11px] text-cyan-400 font-semibold mt-0.5">
+                    Contribution: ₹{req.agreed_contribution}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button 
+                    size="sm" 
+                    variant="success" 
+                    icon={UserCheck}
+                    disabled={actionLoading}
+                    onClick={() => handleAcceptRequest(req.id)}
+                  >
+                    Accept
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="danger" 
+                    icon={UserX}
+                    disabled={actionLoading}
+                    onClick={() => handleRejectRequest(req.id)}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stats Overview Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Rides Shared"
+          title="Total Rides"
           value={allRides.length.toString()}
-          subtext={`${offeredRides.length} Offered • ${mockBookings.length} Booked`}
+          subtext={`${offeredRides.length} Offered • ${myBookings.length} Booked`}
           icon={Bike}
-          trend="+14% this mo"
+          trend="+15% activity"
         />
         <StatCard
           title="Fuel Cost Saved"
           value="₹3,450"
-          subtext="Calculated via fair cost sharing"
+          subtext="Fair transparent expense sharing"
           icon={DollarSign}
           iconColor="text-emerald-400"
           iconBg="bg-emerald-500/10 border-emerald-500/20"
@@ -261,18 +381,18 @@ export default function DashboardPage() {
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
             }`}
           >
-            My Bookings ({mockBookings.length})
+            My Bookings ({myBookings.length})
           </button>
         </div>
 
         {isAuthenticated && (
           <button
-            onClick={fetchMyOfferedRides}
-            disabled={loadingRides}
+            onClick={loadDashboardData}
+            disabled={loadingData}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Refresh offered rides"
+            title="Refresh dashboard data"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loadingRides ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-cyan-400' : ''}`} />
           </button>
         )}
       </div>
@@ -287,7 +407,7 @@ export default function DashboardPage() {
       <Modal
         isOpen={!!selectedRide}
         onClose={() => setSelectedRide(null)}
-        title="Ride Summary & Management"
+        title={selectedRide?.role === 'booked' ? "Confirmed Booking Details" : "Ride Offer Summary & Management"}
       >
         {selectedRide && (
           <div className="space-y-4 text-xs">
@@ -306,7 +426,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Status:</span>
-                <Badge variant={selectedRide.status === 'OPEN' || selectedRide.status === 'Confirmed' ? 'success' : 'warning'}>
+                <Badge variant={selectedRide.status === 'ACCEPTED' || selectedRide.status === 'OPEN' || selectedRide.status === 'Confirmed' ? 'success' : 'warning'}>
                   {selectedRide.status}
                 </Badge>
               </div>
@@ -324,18 +444,30 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex justify-between items-center pt-2">
-              {selectedRide.role === 'offered' && selectedRide.status === 'OPEN' ? (
+              {/* If booked and can cancel */}
+              {selectedRide.role === 'booked' && selectedRide.canCancel && (
                 <Button 
                   size="sm" 
                   variant="danger" 
                   icon={XCircle}
-                  loading={cancelling}
+                  loading={actionLoading}
+                  onClick={() => handleCancelBooking(selectedRide.bookingId || selectedRide.id)}
+                >
+                  Cancel Booking
+                </Button>
+              )}
+
+              {/* If offered and can cancel */}
+              {selectedRide.role === 'offered' && selectedRide.canCancel && (
+                <Button 
+                  size="sm" 
+                  variant="danger" 
+                  icon={XCircle}
+                  loading={actionLoading}
                   onClick={() => handleCancelRide(selectedRide.id)}
                 >
                   Cancel Ride Offer
                 </Button>
-              ) : (
-                <div />
               )}
 
               <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)}>

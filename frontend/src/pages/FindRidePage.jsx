@@ -45,6 +45,8 @@ export default function FindRidePage() {
   const [bestMatchScore, setBestMatchScore] = useState(null);
   const [selectedRide, setSelectedRide] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
 
   // Fallback sample rides when local DB has no active rides
   const fallbackRides = [
@@ -229,14 +231,31 @@ export default function FindRidePage() {
     }
     setSelectedRide(ride);
     setBookingSuccess(false);
+    setBookingError(null);
   };
 
-  const confirmBooking = () => {
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setSelectedRide(null);
-      setBookingSuccess(false);
-    }, 2000);
+  const confirmBooking = async () => {
+    if (!selectedRide) return;
+    setBookingLoading(true);
+    setBookingError(null);
+    try {
+      await axios.post('/api/v1/bookings/request', {
+        ride_id: selectedRide.id,
+        seats_booked: 1,
+        agreed_contribution: selectedRide.cost,
+        pickup_point: selectedRide.from
+      });
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setSelectedRide(null);
+        setBookingSuccess(false);
+      }, 2500);
+    } catch (err) {
+      console.warn('Booking request error:', err);
+      setBookingError(err.response?.data?.detail || 'Could not send booking request. Please try again.');
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   return (
@@ -540,11 +559,17 @@ export default function FindRidePage() {
                   </div>
                 </div>
 
+                {bookingError && (
+                  <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs">
+                    {bookingError}
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)}>
+                  <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)} disabled={bookingLoading}>
                     Cancel
                   </Button>
-                  <Button size="sm" variant="primary" onClick={confirmBooking}>
+                  <Button size="sm" variant="primary" onClick={confirmBooking} loading={bookingLoading}>
                     Send Request
                   </Button>
                 </div>
