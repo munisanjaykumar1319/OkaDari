@@ -20,6 +20,7 @@ import Card, { CardHeader } from '../components/common/Card';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
+import CostBreakdownModal from '../components/cost/CostBreakdownModal';
 
 export default function OfferRidePage() {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ export default function OfferRidePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [publishedRide, setPublishedRide] = useState(null);
+  const [showCostModal, setShowCostModal] = useState(false);
 
   // Sync user's bike details when user loads
   useEffect(() => {
@@ -273,6 +275,15 @@ export default function OfferRidePage() {
                     <span>Suggested Fair Passenger Share (50%):</span>
                     <span>₹{formData.suggestedCost}</span>
                   </div>
+                  <div className="pt-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setShowCostModal(true)}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline"
+                    >
+                      View Detailed Cost-Sharing Formula &rarr;
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
@@ -356,6 +367,13 @@ export default function OfferRidePage() {
           </div>
         </div>
       )}
+      {/* Cost Breakdown Modal */}
+      <CostBreakdownModal
+        isOpen={showCostModal}
+        onClose={() => setShowCostModal(false)}
+        distanceKm={formData.distanceKm}
+        cost={formData.customCost}
+      />
     </div>
   );
 }

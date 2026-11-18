@@ -27,6 +27,7 @@ import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
+import CostBreakdownModal from '../components/cost/CostBreakdownModal';
 
 export default function FindRidePage() {
   const [searchParams] = useSearchParams();
@@ -44,6 +45,7 @@ export default function FindRidePage() {
   const [loading, setLoading] = useState(false);
   const [bestMatchScore, setBestMatchScore] = useState(null);
   const [selectedRide, setSelectedRide] = useState(null);
+  const [costBreakdownRide, setCostBreakdownRide] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState(null);
@@ -493,6 +495,13 @@ export default function FindRidePage() {
                 <div className="text-left lg:text-right">
                   <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Fair Contribution</span>
                   <span className="text-2xl font-black text-cyan-400">₹{ride.cost}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCostBreakdownRide(ride)}
+                    className="text-[10px] text-cyan-400 hover:text-cyan-300 underline block mt-0.5"
+                  >
+                    View Split &rarr;
+                  </button>
                 </div>
                 <Button 
                   size="md" 
@@ -578,6 +587,16 @@ export default function FindRidePage() {
           </div>
         )}
       </Modal>
+      {/* Cost Breakdown Modal */}
+      {costBreakdownRide && (
+        <CostBreakdownModal
+          isOpen={!!costBreakdownRide}
+          onClose={() => setCostBreakdownRide(null)}
+          distanceKm={costBreakdownRide.distanceKm}
+          cost={costBreakdownRide.cost}
+          isEv={costBreakdownRide.bikeModel?.toLowerCase().includes('ev') || costBreakdownRide.bikeModel?.toLowerCase().includes('ather')}
+        />
+      )}
     </div>
   );
 }

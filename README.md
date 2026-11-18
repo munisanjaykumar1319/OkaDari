@@ -16,8 +16,8 @@ A modern, full-stack, smart bike ride-sharing and cost-sharing platform engineer
 | **06** | **Find a Ride** | Search, location filtering, date/time filtering, listing active rides | **Completed** ✅ |
 | **07** | **Smart Ride Matching** | Location comparison, route similarity scoring, time compatibility | **Completed** ✅ |
 | **08** | **Booking Management** | Send requests, accept/reject workflows, booking status, cancellation | **Completed** ✅ |
-| **09** | **Cost-Sharing System** | Journey expense estimation, fair passenger contribution breakdown | *Next Up* ⏳ |
-| **10** | **Safety Features** | Phone & document verification, emergency contacts, report/block, reviews | *Upcoming* |
+| **09** | **Cost-Sharing System** | Journey expense estimation, fair passenger contribution breakdown | **Completed** ✅ |
+| **10** | **Safety Features** | Phone & document verification, emergency contacts, report/block, reviews | *Next Up* ⏳ |
 | **11** | **Integration & Testing** | End-to-end API testing, booking workflow validation, security audit | *Upcoming* |
 | **12** | **Deployment & Docs** | Production builds, GitHub documentation, project report & demo | *Upcoming* |
 
