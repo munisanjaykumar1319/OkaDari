@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime, date as date_type
+from datetime import datetime, timedelta, date as date_type
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -8,6 +8,8 @@ from app.models.user import User
 from app.models.ride import Ride
 from app.models.booking import Booking
 from app.schemas.ride import RideCreate, RideUpdate, RideResponse
+from app.schemas.matching import SmartMatchRequest, SmartMatchResponse, SmartMatchItem
+from app.services.matching import compute_smart_ride_match
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -145,6 +147,68 @@ def search_rides(
 
     rides = query.offset(offset).limit(limit).all()
     return rides
+
+
+@router.post("/smart-match", response_model=SmartMatchResponse, summary="Intelligently score and rank rides based on route similarity, coordinates, and departure compatibility")
+def smart_match_rides(
+    req: SmartMatchRequest,
+    db: Session = Depends(get_db),
+):
+    # Search for all open upcoming rides
+    candidate_rides = db.query(Ride).filter(
+        Ride.status == "OPEN",
+        Ride.departure_time >= datetime.utcnow(),
+        Ride.available_seats >= 1
+    ).all()
+
+    p_origin_coords = (req.origin_lat, req.origin_lon) if (req.origin_lat and req.origin_lon) else None
+    p_dest_coords = (req.destination_lat, req.destination_lon) if (req.destination_lat and req.destination_lon) else None
+
+    matches: List[SmartMatchItem] = []
+
+    for ride in candidate_rides:
+        r_origin_coords = (ride.origin_lat, ride.origin_lon) if (ride.origin_lat and ride.origin_lon) else None
+        r_dest_coords = (ride.destination_lat, ride.destination_lon) if (ride.destination_lat and ride.destination_lon) else None
+
+        match_metrics = compute_smart_ride_match(
+            p_origin=req.origin,
+            p_dest=req.destination,
+            p_dep_time=req.departure_time,
+            p_origin_coords=p_origin_coords,
+            p_dest_coords=p_dest_coords,
+            ride_origin=ride.origin,
+            ride_dest=ride.destination,
+            ride_dep_time=ride.departure_time,
+            ride_origin_coords=r_origin_coords,
+            ride_dest_coords=r_dest_coords,
+        )
+
+        score = match_metrics["match_score"]
+        if score >= req.min_score:
+            matches.append(
+                SmartMatchItem(
+                    ride=ride,
+                    match_score=score,
+                    pickup_distance_km=match_metrics["pickup_distance_km"],
+                    dropoff_distance_km=match_metrics["dropoff_distance_km"],
+                    time_difference_minutes=match_metrics["time_difference_minutes"],
+                    compatibility_tag=match_metrics["compatibility_tag"],
+                    pickup_score=match_metrics["pickup_score"],
+                    dropoff_score=match_metrics["dropoff_score"],
+                    time_score=match_metrics["time_score"]
+                )
+            )
+
+    # Rank rides strictly by match score descending
+    matches.sort(key=lambda m: m.match_score, reverse=True)
+
+    best_score = matches[0].match_score if matches else 0.0
+
+    return SmartMatchResponse(
+        total_matches=len(matches),
+        best_match_score=best_score,
+        matches=matches
+    )
 
 
 @router.get("/{ride_id}", response_model=RideResponse, summary="Get details of a specific ride")
