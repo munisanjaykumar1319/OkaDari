@@ -63,8 +63,32 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
+  // Global 401 response interceptor
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, loading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      isAuthenticated: !!user, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      updateProfile,
+      refreshUser: fetchCurrentUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );
