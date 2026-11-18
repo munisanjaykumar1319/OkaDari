@@ -21,7 +21,9 @@ import {
   UserX,
   MessageSquare,
   HeartPulse,
-  ShieldAlert
+  ShieldAlert,
+  Navigation,
+  Eye
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +36,8 @@ import Modal from '../components/common/Modal';
 import SafetyHubModal from '../components/safety/SafetyHubModal';
 import ReviewModal from '../components/safety/ReviewModal';
 import ReportModal from '../components/safety/ReportModal';
+import LiveLocationProvider from '../components/location/LiveLocationProvider';
+import LiveLocationViewer from '../components/location/LiveLocationViewer';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -49,6 +53,9 @@ export default function DashboardPage() {
   const [safetyModalOpen, setSafetyModalOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  // Live location tracking state
+  const [liveProviderRide, setLiveProviderRide] = useState(null); // { rideId }
+  const [liveViewerRide, setLiveViewerRide] = useState(null);     // { rideId }
 
   // Active user profile
   const user = authUser ? {
@@ -567,6 +574,28 @@ export default function DashboardPage() {
                 </Button>
               )}
 
+              {/* Live Location Sharing — for offered rides */}
+              {selectedRide.role === 'offered' && isAuthenticated && (
+                <div className="w-full mt-4">
+                  <LiveLocationProvider
+                    rideId={selectedRide.id}
+                    token={localStorage.getItem('access_token')}
+                  />
+                </div>
+              )}
+
+              {/* Live Location Viewer — for accepted bookings */}
+              {selectedRide.role === 'booked' && selectedRide.status === 'ACCEPTED' && isAuthenticated && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Eye}
+                  onClick={() => setLiveViewerRide({ rideId: selectedRide.rideId })}
+                >
+                  Track Live Location
+                </Button>
+              )}
+
               <Button size="sm" variant="secondary" onClick={() => setSelectedRide(null)}>
                 Close
               </Button>
@@ -602,6 +631,15 @@ export default function DashboardPage() {
           reportedUserName={reportTarget.userName}
           rideId={reportTarget.rideId}
           onSuccess={() => loadDashboardData()}
+        />
+      )}
+
+      {/* Live Location Viewer Modal */}
+      {liveViewerRide && (
+        <LiveLocationViewer
+          rideId={liveViewerRide.rideId}
+          token={localStorage.getItem('access_token')}
+          onClose={() => setLiveViewerRide(null)}
         />
       )}
     </div>

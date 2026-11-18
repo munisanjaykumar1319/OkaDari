@@ -4,20 +4,23 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#050811] border-t border-slate-800/80 text-slate-400 text-xs">
+    <footer className="bg-[#14213D] border-t border-blue-900/40 text-slate-300 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Col */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+              <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white shadow-md">
                 <Bike className="w-5 h-5" />
               </div>
               <span className="font-bold text-base text-white tracking-tight">
-                Ride<span className="text-cyan-400">Share</span>
+                Oka<span className="text-blue-400">Dari</span>
               </span>
             </div>
-            <p className="text-slate-400 text-xs leading-relaxed">
+            <p className="text-slate-300 text-xs leading-relaxed">
+              One Route. One Ride. Shared Journey.
+            </p>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
               Smart bike ride-sharing and fair cost-sharing platform. Cut commute costs, reduce traffic congestion, and travel safer together.
             </p>
           </div>

@@ -57,21 +57,21 @@ export default function Navbar() {
     : 'U';
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#080d19]/90 backdrop-blur-md border-b border-slate-800/80">
+    <nav className="sticky top-0 z-40 bg-[#14213D]/95 backdrop-blur-md border-b border-blue-900/40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition">
+              <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition">
                 <Bike className="w-6 h-6 text-white transform group-hover:-rotate-6 transition duration-200" />
               </div>
               <div>
                 <span className="font-extrabold text-xl tracking-tight text-white">
-                  Ride<span className="text-cyan-400">Share</span>
+                  Oka<span className="text-blue-400">Dari</span>
                 </span>
-                <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
-                  Smart Two-Wheeler
+                <span className="block text-[10px] text-blue-200 uppercase tracking-widest font-semibold">
+                  One Route. One Ride.
                 </span>
               </div>
             </Link>

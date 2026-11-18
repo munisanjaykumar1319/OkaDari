@@ -1,318 +1,398 @@
-import React, { useState } from 'react';
+/**
+ * OkaDari – Landing Page with Interactive Map
+ * "One Route. One Ride. Shared Journey."
+ */
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Bike, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  ArrowRight, 
-  ShieldCheck, 
-  Zap, 
-  Percent, 
-  Users, 
-  Leaf, 
-  Sparkles,
-  ChevronRight,
-  CheckCircle2,
-  Search
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import {
+  Bike, ArrowRight, ShieldCheck, Percent, Leaf, Sparkles,
+  Navigation, Search, ChevronRight
 } from 'lucide-react';
+import { getCurrentLocation, reverseGeocode } from '../services/geocoding';
+import { getRoute } from '../services/routing';
+import LocationSearchInput from '../components/map/LocationSearchInput';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
+import '../services/mapConfig'; // Leaflet icon fix
+import { PICKUP_ICON, DESTINATION_ICON, RIDE_ICON } from '../services/mapConfig';
+
+// Default map center: Hyderabad
+const DEFAULT_CENTER = [17.3850, 78.4867];
+const DEFAULT_ZOOM = 12;
+
+/** Recenter map when center changes */
+function RecenterMap({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) map.setView(center, zoom || DEFAULT_ZOOM);
+  }, [center, zoom, map]);
+  return null;
+}
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
-  const [date, setDate] = useState('');
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    navigate(`/find?from=${encodeURIComponent(fromLocation)}&to=${encodeURIComponent(toLocation)}&date=${date}`);
+  // Location state
+  const [pickup, setPickup] = useState({ name: '', lat: null, lon: null });
+  const [destination, setDestination] = useState({ name: '', lat: null, lon: null });
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+
+  // Route state
+  const [routeCoords, setRouteCoords] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+
+  // Map state
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+
+  // Nearby rides (from API)
+  const [nearbyRides, setNearbyRides] = useState([]);
+
+  /** Detect current GPS location */
+  const handleUseMyLocation = useCallback(async () => {
+    setLocationLoading(true);
+    setLocationError('');
+    try {
+      const { lat, lon } = await getCurrentLocation();
+      setCurrentLocation({ lat, lon });
+      setMapCenter([lat, lon]);
+      const name = await reverseGeocode(lat, lon);
+      setPickup({ name: name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`, lat, lon });
+    } catch (err) {
+      setLocationError('Could not get location. Please allow GPS access.');
+    } finally {
+      setLocationLoading(false);
+    }
+  }, []);
+
+  /** Draw route whenever pickup + destination are both set */
+  useEffect(() => {
+    if (pickup.lat && pickup.lon && destination.lat && destination.lon) {
+      getRoute(pickup.lat, pickup.lon, destination.lat, destination.lon).then((result) => {
+        if (result) {
+          setRouteCoords(result.geojson.coordinates.map(([lng, lt]) => [lt, lng]));
+          setRouteInfo(result);
+          // Recenter between pickup and destination
+          setMapCenter([
+            (pickup.lat + destination.lat) / 2,
+            (pickup.lon + destination.lon) / 2,
+          ]);
+        }
+      });
+    } else {
+      setRouteCoords(null);
+      setRouteInfo(null);
+    }
+  }, [pickup, destination]);
+
+  /** Fetch nearby rides from backend */
+  useEffect(() => {
+    fetch('/api/v1/rides/search?limit=6')
+      .then((r) => r.json())
+      .then((data) => setNearbyRides(Array.isArray(data) ? data.slice(0, 6) : []))
+      .catch(() => {});
+  }, []);
+
+  const handleFindRide = () => {
+    const params = new URLSearchParams();
+    if (pickup.name) params.set('from', pickup.name);
+    if (destination.name) params.set('to', destination.name);
+    if (pickup.lat) params.set('originLat', pickup.lat);
+    if (pickup.lon) params.set('originLon', pickup.lon);
+    if (destination.lat) params.set('destLat', destination.lat);
+    if (destination.lon) params.set('destLon', destination.lon);
+    navigate(`/find?${params.toString()}`);
   };
 
-  const sampleRides = [
-    {
-      id: 1,
-      from: 'Hitech City, Hyderabad',
-      to: 'Gachibowli DLF',
-      time: '09:00 AM Today',
-      rider: 'Vikram Reddy',
-      rating: '4.9 ★',
-      bike: 'Royal Enfield Classic 350',
-      seats: '1 Seat Left',
-      contribution: '₹45',
-      matchScore: '98% Route Match'
-    },
-    {
-      id: 2,
-      from: 'Indiranagar 100ft Rd',
-      to: 'Electronic City Phase 1',
-      time: '08:45 AM Today',
-      rider: 'Ananya Sharma',
-      rating: '5.0 ★',
-      bike: 'Ather 450X (EV)',
-      seats: '1 Seat Left',
-      contribution: '₹60',
-      matchScore: '94% Route Match'
-    },
-    {
-      id: 3,
-      from: 'Bandra Kurla Complex (BKC)',
-      to: 'Andheri East Metro',
-      time: '09:30 AM Today',
-      rider: 'Siddharth Rao',
-      rating: '4.8 ★',
-      bike: 'Yamaha FZ-S',
-      seats: '1 Seat Left',
-      contribution: '₹50',
-      matchScore: '91% Route Match'
-    }
-  ];
-
   return (
-    <div className="space-y-20 pb-16">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 md:pt-20">
-        {/* Ambient glow backgrounds */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 text-xs font-semibold mb-6 shadow-sm">
+    <div className="min-h-screen bg-[#EFF6FF]" style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* ─── Hero Header ─── */}
+      <section className="bg-[#14213D] text-white py-10 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-300 text-xs font-semibold mb-5">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>AI-Driven Route Matching & Fair Cost Splitting</span>
+            AI-Powered Route Matching · Live GPS Tracking
           </div>
-
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-[1.15] max-w-4xl mx-auto">
-            Smart Daily Commutes. <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-              Share Rides, Split Fuel, Save Time.
-            </span>
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+            <span className="text-white">Oka</span>
+            <span style={{ color: '#2563EB' }}>Dari</span>
           </h1>
-
-          <p className="mt-6 text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            The intelligent two-wheeler ride-pooling system. Connect with verified daily commuters traveling along your exact route and cut commute expenses by up to 60%.
+          <p className="mt-3 text-blue-200 text-base sm:text-lg font-medium tracking-wide">
+            One Route. One Ride. Shared Journey.
           </p>
+          <p className="mt-2 text-slate-400 text-sm max-w-xl mx-auto">
+            India's smartest two-wheeler ride-sharing platform. Connect with verified commuters on your exact route and split fuel costs fairly.
+          </p>
+        </div>
+      </section>
 
-          {/* Quick Search Floating Box */}
-          <div className="mt-10 max-w-4xl mx-auto">
-            <form 
-              onSubmit={handleSearch}
-              className="bg-[#0b1324]/95 border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-center gap-3"
-            >
+      {/* ─── Main Map Section ─── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-blue-100">
+          {/* Search controls above the map */}
+          <div className="bg-white px-6 py-5 border-b border-blue-50">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+              {/* Use My Location Button */}
+              <button
+                onClick={handleUseMyLocation}
+                disabled={locationLoading}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shrink-0"
+                style={{ background: locationLoading ? '#93C5FD' : '#2563EB' }}
+              >
+                <Navigation className="w-4 h-4" />
+                {locationLoading ? 'Detecting…' : '📍 Use My Location'}
+              </button>
+
               {/* Pickup Input */}
-              <div className="w-full md:flex-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-cyan-400">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Leaving from (e.g. Hitech City)"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 transition"
-                  required
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">PICKUP</label>
+                <LocationSearchInput
+                  placeholder="Pickup point (e.g. Hitech City)"
+                  value={pickup.name}
+                  onChange={(name, lat, lon) => setPickup({ name, lat, lon })}
+                  icon="🔵"
                 />
               </div>
 
               {/* Destination Input */}
-              <div className="w-full md:flex-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-indigo-400">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Going to (e.g. Gachibowli DLF)"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 transition"
-                  required
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">DESTINATION</label>
+                <LocationSearchInput
+                  placeholder="Where to? (e.g. Charminar)"
+                  value={destination.name}
+                  onChange={(name, lat, lon) => setDestination({ name, lat, lon })}
+                  icon="🔴"
                 />
               </div>
 
-              {/* Date Input */}
-              <div className="w-full md:w-48 relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-cyan-500 transition"
-                />
+              {/* CTA Buttons */}
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={handleFindRide}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-md transition-all hover:shadow-lg"
+                  style={{ background: '#2563EB' }}
+                >
+                  <Search className="w-4 h-4" /> Find a Ride
+                </button>
+                <button
+                  onClick={() => navigate('/offer')}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all hover:bg-blue-50"
+                  style={{ borderColor: '#2563EB', color: '#2563EB' }}
+                >
+                  <Bike className="w-4 h-4" /> Offer a Ride
+                </button>
               </div>
-
-              {/* Submit CTA */}
-              <Button 
-                type="submit" 
-                size="md" 
-                variant="primary" 
-                className="w-full md:w-auto shrink-0 py-3 px-6"
-                icon={Search}
-              >
-                Find Ride
-              </Button>
-            </form>
-
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> 100% ID & License Verified</span>
-              <span className="flex items-center gap-1.5"><Percent className="w-3.5 h-3.5 text-emerald-400" /> Transparent Zero-Commission Split</span>
-              <span className="flex items-center gap-1.5"><Leaf className="w-3.5 h-3.5 text-teal-400" /> Low Carbon City Commute</span>
             </div>
+
+            {/* Location error */}
+            {locationError && (
+              <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                ⚠️ {locationError}
+              </p>
+            )}
+
+            {/* Route info badge */}
+            {routeInfo && (
+              <div className="mt-3 inline-flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#2563EB' }}>
+                <span>🗺️ {routeInfo.distanceKm} km</span>
+                <span className="opacity-60">|</span>
+                <span>⏱ {routeInfo.durationMins} min</span>
+              </div>
+            )}
+          </div>
+
+          {/* The Map */}
+          <div style={{ height: '480px', position: 'relative' }}>
+            <MapContainer
+              center={mapCenter}
+              zoom={DEFAULT_ZOOM}
+              style={{ height: '100%', width: '100%' }}
+              zoomControl={true}
+            >
+              <TileLayer
+                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <RecenterMap center={mapCenter} />
+
+              {/* Pickup marker */}
+              {pickup.lat && pickup.lon && (
+                <Marker position={[pickup.lat, pickup.lon]} icon={PICKUP_ICON}>
+                  <Popup>
+                    <div className="text-sm font-semibold">📍 Pickup</div>
+                    <div className="text-xs text-gray-600 mt-1">{pickup.name}</div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Destination marker */}
+              {destination.lat && destination.lon && (
+                <Marker position={[destination.lat, destination.lon]} icon={DESTINATION_ICON}>
+                  <Popup>
+                    <div className="text-sm font-semibold">🏁 Destination</div>
+                    <div className="text-xs text-gray-600 mt-1">{destination.name}</div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Route polyline */}
+              {routeCoords && (
+                <Polyline
+                  positions={routeCoords}
+                  color="#2563EB"
+                  weight={5}
+                  opacity={0.85}
+                />
+              )}
+
+              {/* Nearby ride markers */}
+              {nearbyRides.map((ride) =>
+                ride.origin_lat && ride.origin_lon ? (
+                  <Marker
+                    key={ride.id}
+                    position={[ride.origin_lat, ride.origin_lon]}
+                    icon={RIDE_ICON}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <div className="font-bold text-blue-700">{ride.origin} → {ride.destination}</div>
+                        <div className="text-xs text-gray-600 mt-1">₹{ride.cost_per_seat}/seat · {ride.available_seats} seat(s)</div>
+                        <button
+                          onClick={() => navigate('/find')}
+                          className="mt-2 w-full py-1 text-xs font-bold text-white rounded-lg"
+                          style={{ background: '#2563EB' }}
+                        >
+                          View Ride
+                        </button>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+            </MapContainer>
           </div>
         </div>
       </section>
 
-      {/* Live Available Rides Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>Popular Active Rides Right Now</span>
-              <Badge variant="success" dot size="sm">Live</Badge>
-            </h2>
-            <p className="text-slate-400 text-xs mt-1">
-              Top-rated riders with upcoming empty pillion seats along high-demand tech corridors
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/find')}
-            icon={ArrowRight} 
-            iconPosition="right"
-          >
-            Explore All Rides
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {sampleRides.map((ride) => (
-            <Card key={ride.id} hoverEffect className="relative flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="indigo" size="sm">{ride.matchScore}</Badge>
-                  <span className="text-xs font-semibold text-emerald-400">{ride.seats}</span>
-                </div>
-
-                {/* Route */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5"></div>
-                    <div>
-                      <span className="text-[11px] text-slate-400 block">From</span>
-                      <span className="text-sm font-semibold text-white">{ride.from}</span>
-                    </div>
-                  </div>
-                  <div className="border-l-2 border-dashed border-slate-700 ml-1 h-3"></div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1.5"></div>
-                    <div>
-                      <span className="text-[11px] text-slate-400 block">To</span>
-                      <span className="text-sm font-semibold text-white">{ride.to}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1.5 mb-4">
-                  <div className="flex justify-between text-slate-300">
-                    <span>Departure:</span>
-                    <span className="font-semibold text-cyan-400">{ride.time}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>Rider:</span>
-                    <span className="font-semibold text-white">{ride.rider} ({ride.rating})</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Vehicle:</span>
-                    <span>{ride.bike}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Estimated Share</span>
-                  <span className="text-2xl font-black text-cyan-400">{ride.contribution}</span>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="primary"
-                  onClick={() => navigate('/find')}
-                >
-                  Book Seat
-                </Button>
-              </div>
-            </Card>
+      {/* ─── Stats Row ─── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Rides Shared', value: '12,400+', icon: '🏍️' },
+            { label: 'Avg Cost Saved', value: '₹850/mo', icon: '💰' },
+            { label: 'CO₂ Reduced', value: '4.2 Tons', icon: '🌿' },
+            { label: 'Verified Riders', value: '3,200+', icon: '✅' },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-2xl p-5 text-center shadow-sm border border-blue-50 hover:shadow-md transition">
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <div className="text-xl font-black" style={{ color: '#2563EB' }}>{s.value}</div>
+              <div className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <Badge variant="primary" className="mb-3">Simplified Flow</Badge>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">
-            How Smart Ride-Sharing Works
-          </h2>
-          <p className="text-slate-400 text-sm mt-2">
-            No endless haggling. Transparent routes, verified riders, and fair split calculations in 3 simple steps.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="text-center relative">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mx-auto flex items-center justify-center font-bold text-lg mb-4 shadow-lg shadow-cyan-500/10">
-              01
+      {/* ─── Nearby Rides Cards ─── */}
+      {nearbyRides.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-bold" style={{ color: '#14213D' }}>
+                Available Rides Near You
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">Live rides from verified providers</p>
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Publish or Search Route</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Riders with empty seats list their daily route and schedule. Passengers search by origin and destination.
-            </p>
-          </Card>
+            <button
+              onClick={() => navigate('/find')}
+              className="flex items-center gap-1 text-sm font-semibold hover:underline"
+              style={{ color: '#2563EB' }}
+            >
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {nearbyRides.slice(0, 3).map((ride) => (
+              <div key={ride.id} className="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 hover:shadow-md transition cursor-pointer" onClick={() => navigate('/find')}>
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: '#2563EB' }}>
+                    OPEN
+                  </span>
+                  <span className="text-lg font-black" style={{ color: '#2563EB' }}>₹{ride.cost_per_seat}</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">🔵</span>
+                    <div>
+                      <div className="text-xs text-gray-400">From</div>
+                      <div className="font-semibold text-gray-800 text-xs leading-snug">{ride.origin}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">🔴</span>
+                    <div>
+                      <div className="text-xs text-gray-400">To</div>
+                      <div className="font-semibold text-gray-800 text-xs leading-snug">{ride.destination}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                  <span>🏍️ {ride.bike_model || 'Bike'}</span>
+                  <span>{ride.available_seats} seat(s) left</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-          <Card className="text-center relative">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 mx-auto flex items-center justify-center font-bold text-lg mb-4 shadow-lg shadow-indigo-500/10">
-              02
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Smart Route Matching</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Our intelligent engine scores proximity, deviation, and departure times to connect riders along the exact pathway.
-            </p>
-          </Card>
-
-          <Card className="text-center relative">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center font-bold text-lg mb-4 shadow-lg shadow-emerald-500/10">
-              03
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Fair Cost-Sharing & Ride</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              The platform automatically computes suggested fuel contribution based on exact distance. Mutual agreement, zero hidden cuts.
-            </p>
-          </Card>
+      {/* ─── How It Works ─── */}
+      <section className="bg-[#14213D] py-16 px-4 mt-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <span className="text-xs font-bold tracking-widest text-blue-400 uppercase">Simple 3-Step Flow</span>
+          <h2 className="text-3xl font-black text-white mt-3 mb-10">How OkaDari Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { step: '01', title: 'Find or Offer a Route', desc: 'Riders list their daily route. Passengers search by origin & destination. Maps show the exact path.', color: '#2563EB' },
+              { step: '02', title: 'Smart Match & Book', desc: 'AI scores route overlap, timing, and rider ratings to surface the best match for your commute.', color: '#3B82F6' },
+              { step: '03', title: 'Ride & Track Live', desc: 'Rider shares live GPS. Passenger tracks the bike in real-time. Cost is split fairly — no commission.', color: '#60A5FA' },
+            ].map((s) => (
+              <div key={s.step} className="bg-white/5 border border-white/10 rounded-2xl p-7 text-left hover:bg-white/10 transition">
+                <div className="text-3xl font-black mb-3" style={{ color: s.color }}>{s.step}</div>
+                <h3 className="text-white font-bold text-lg mb-2">{s.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Bottom CTA Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-r from-cyan-900/40 via-indigo-900/40 to-slate-900 border border-cyan-500/30 p-8 sm:p-12 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
-          <div className="space-y-3 max-w-xl">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Riding alone on your daily commute?
-            </h2>
-            <p className="text-slate-300 text-sm">
-              Offer your empty pillion seat to fellow verified professionals, offset your monthly fuel expenses, and make commute enjoyable.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-            <Button size="lg" variant="primary" onClick={() => navigate('/offer')}>
-              Offer a Ride Now
-            </Button>
-            <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
-            </Button>
+      {/* ─── Bottom CTA ─── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="rounded-3xl p-10 text-center border-2" style={{ background: '#EFF6FF', borderColor: '#2563EB' }}>
+          <h2 className="text-3xl font-black mb-3" style={{ color: '#14213D' }}>
+            Start Sharing Today
+          </h2>
+          <p className="text-gray-600 mb-7 max-w-lg mx-auto text-sm">
+            Join thousands of commuters who've cut their monthly fuel spend by up to 60% — while making the city a little greener.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => navigate('/find')}
+              className="px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all"
+              style={{ background: '#2563EB' }}
+            >
+              🔍 Find a Ride
+            </button>
+            <button
+              onClick={() => navigate('/offer')}
+              className="px-8 py-3 rounded-xl font-bold text-sm border-2 hover:bg-blue-50 transition-all"
+              style={{ borderColor: '#2563EB', color: '#2563EB' }}
+            >
+              🏍️ Offer a Ride
+            </button>
           </div>
         </div>
       </section>
