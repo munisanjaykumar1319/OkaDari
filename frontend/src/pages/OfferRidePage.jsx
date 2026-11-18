@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Bike, 
   MapPin, 
@@ -8,10 +8,14 @@ import {
   DollarSign, 
   ShieldCheck, 
   CheckCircle2, 
-  Sparkles,
-  ArrowRight,
-  Info
+  Sparkles, 
+  ArrowRight, 
+  Info,
+  AlertCircle,
+  LogIn
 } from 'lucide-react';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import Card, { CardHeader } from '../components/common/Card';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -19,28 +23,48 @@ import Badge from '../components/common/Badge';
 
 export default function OfferRidePage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
+  // Tomorrow's default date string
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultDate = tomorrow.toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
-    from: 'Hitech City, Hyderabad',
+    from: 'Hitech City Cyber Towers',
     to: 'Gachibowli DLF, Hyderabad',
-    date: '2026-11-19',
+    date: defaultDate,
     time: '09:00',
     distanceKm: '12',
-    bikeModel: 'Royal Enfield Hunter 350',
-    bikePlate: 'TS 09 EZ 4589',
+    bikeModel: user?.bike_model || 'Royal Enfield Hunter 350',
+    bikePlate: user?.bike_plate || 'TS 09 EZ 4589',
     seats: '1',
     helmetProvided: true,
     suggestedCost: '45',
     customCost: '45',
+    notes: 'Starting on time from the main gate. Clean helmet provided.'
   });
 
-  const [published, setPublished] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [publishedRide, setPublishedRide] = useState(null);
+
+  // Sync user's bike details when user loads
+  useEffect(() => {
+    if (user?.bike_model) {
+      setFormData((prev) => ({
+        ...prev,
+        bikeModel: user.bike_model || prev.bikeModel,
+        bikePlate: user.bike_plate || prev.bikePlate,
+      }));
+    }
+  }, [user]);
 
   const calculateCost = (dist) => {
     const km = parseFloat(dist) || 0;
-    // Assume average mileage 35 km/l, petrol ₹105/l => approx ₹3/km fuel cost.
-    // 50% fair passenger split = km * 1.5 rounded to nearest ₹5
+    // Commuter bike average: ~ ₹3/km fuel cost. Fair 50% split rounded to nearest ₹5:
     const fuelCost = km * 3;
-    const fairSplit = Math.round((fuelCost * 0.5) / 5) * 5 || 20;
+    const fairSplit = Math.max(20, Math.round((fuelCost * 0.5) / 5) * 5);
     return fairSplit;
   };
 
@@ -55,33 +79,84 @@ export default function OfferRidePage() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setPublished(true);
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2200);
+    setError(null);
+
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/offer');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const departureDateTime = new Date(`${formData.date}T${formData.time}:00`);
+
+      const payload = {
+        origin: formData.from,
+        destination: formData.to,
+        departure_time: departureDateTime.toISOString(),
+        available_seats: parseInt(formData.seats) || 1,
+        bike_model: formData.bikeModel,
+        bike_plate: formData.bikePlate,
+        helmet_provided: formData.helmetProvided,
+        distance_km: parseFloat(formData.distanceKm) || 0,
+        estimated_fuel_cost: (parseFloat(formData.distanceKm) || 0) * 3.0,
+        cost_per_seat: parseFloat(formData.customCost) || 30.0,
+        notes: formData.notes
+      };
+
+      const response = await axios.post('/api/v1/rides/offer', payload);
+      setPublishedRide(response.data);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2500);
+    } catch (err) {
+      console.error('Ride publishing error:', err);
+      setError(err.response?.data?.detail || 'Failed to publish ride. Please ensure the backend is running and details are valid.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto">
-        <Badge variant="primary" className="mb-2">Phase 2 – Interactive UI</Badge>
+        <Badge variant="primary" className="mb-2">Phase 5 – Ride Publishing</Badge>
         <h1 className="text-3xl font-extrabold text-white tracking-tight">Offer a Bike Ride</h1>
         <p className="text-xs text-slate-400 mt-1">
           Have an empty pillion seat on your commute? Share your route, cut your fuel bill, and travel safely together.
         </p>
       </div>
 
-      {published ? (
+      {!isAuthenticated && (
+        <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-amber-200">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>You need to be signed in to publish your ride offer and receive booking requests.</span>
+          </div>
+          <Button size="sm" variant="outline" icon={LogIn} onClick={() => navigate('/login')}>
+            Sign In First
+          </Button>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-950/80 border border-rose-800/60 flex items-start gap-3 text-xs text-rose-300">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {publishedRide ? (
         <Card className="text-center py-16 space-y-4 max-w-lg mx-auto">
           <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
             <CheckCircle2 className="w-10 h-10 animate-bounce" />
           </div>
           <h2 className="text-2xl font-bold text-white">Ride Published Successfully!</h2>
           <p className="text-xs text-slate-400">
-            Your ride from <strong className="text-white">{formData.from}</strong> to <strong className="text-white">{formData.to}</strong> is now live. Redirecting to your dashboard...
+            Your ride from <strong className="text-white">{publishedRide.origin}</strong> to <strong className="text-white">{publishedRide.destination}</strong> is now live on the network with <strong className="text-cyan-400">₹{publishedRide.cost_per_seat}</strong> contribution. Redirecting to your dashboard...
           </p>
         </Card>
       ) : (
@@ -118,6 +193,7 @@ export default function OfferRidePage() {
                     label="Date"
                     type="date"
                     value={formData.date}
+                    min={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     icon={Calendar}
                     required
@@ -133,6 +209,8 @@ export default function OfferRidePage() {
                   <Input
                     label="Estimated Distance (km)"
                     type="number"
+                    step="0.5"
+                    min="1"
                     value={formData.distanceKm}
                     onChange={handleDistanceChange}
                     required
@@ -189,7 +267,7 @@ export default function OfferRidePage() {
                 <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-800/40 space-y-2 text-xs">
                   <div className="flex justify-between text-slate-300">
                     <span>Estimated One-Way Fuel Expense:</span>
-                    <span>₹{parseInt(formData.distanceKm || 0) * 3}</span>
+                    <span>₹{parseFloat(formData.distanceKm || 0) * 3}</span>
                   </div>
                   <div className="flex justify-between text-cyan-400 font-bold text-sm pt-1 border-t border-cyan-800/40">
                     <span>Suggested Fair Passenger Share (50%):</span>
@@ -201,6 +279,8 @@ export default function OfferRidePage() {
                   <Input
                     label="Your Expected Passenger Share (₹)"
                     type="number"
+                    min="10"
+                    max="500"
                     value={formData.customCost}
                     onChange={(e) => setFormData({ ...formData, customCost: e.target.value })}
                     icon={DollarSign}
@@ -214,7 +294,13 @@ export default function OfferRidePage() {
               </div>
             </Card>
 
-            <Button type="submit" size="lg" variant="primary" className="w-full">
+            <Button 
+              type="submit" 
+              size="lg" 
+              variant="primary" 
+              className="w-full" 
+              loading={loading}
+            >
               Publish Ride Listing
             </Button>
           </form>
@@ -229,7 +315,7 @@ export default function OfferRidePage() {
               <Card glow className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Badge variant="primary" size="sm" dot>Active Listing</Badge>
-                  <span className="text-xs font-semibold text-emerald-400">1 Seat</span>
+                  <span className="text-xs font-semibold text-emerald-400">1 Pillion Seat</span>
                 </div>
 
                 <div className="space-y-2">
@@ -246,7 +332,7 @@ export default function OfferRidePage() {
 
                 <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-1 text-slate-300">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Time:</span>
+                    <span className="text-slate-400">Schedule:</span>
                     <span className="text-cyan-400">{formData.date} at {formData.time}</span>
                   </div>
                   <div className="flex justify-between">
@@ -256,13 +342,13 @@ export default function OfferRidePage() {
                   <div className="flex justify-between">
                     <span className="text-slate-400">Helmet:</span>
                     <span className={formData.helmetProvided ? 'text-emerald-400' : 'text-slate-400'}>
-                      {formData.helmetProvided ? 'Provided' : 'Bring your own'}
+                      {formData.helmetProvided ? 'Provided 🪖' : 'Bring your own'}
                     </span>
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Expected Share:</span>
+                  <span className="text-[11px] text-slate-400">Passenger Share:</span>
                   <span className="text-2xl font-black text-cyan-400">₹{formData.customCost || 0}</span>
                 </div>
               </Card>
